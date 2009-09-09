@@ -54,6 +54,44 @@ def main( ):
 		print "All tests were successful"
 	else:
 		print "One or more tests did not succeed."
+	
+	try:
+		testCB = Clipboard('xsel')
+		testString = 'I want a shrubbery!' 
+		print "Test string = " + testString
+		testCB.write( testString )
+		if testCB.read( ) == testString:
+			print "Clipboard (xsel) copy test successful"
+		else:
+			print "Clipboard (xsel) copy test failed"
+		testCB.clear( )
+		if len( testCB.read( ) ):
+			print "Clipboard (xsel) clearing test failed"
+		else:
+			print "Clipboard (xsel) clearing test successful"
+
+	except Exception, e:
+		print "Clipboard (xsel) tests raised an Exception:"
+		print e.message
+		
+	try:
+		testCB = Clipboard( 'xclip' )
+		testString = 'I want a shrubbery!' 
+		print "Test string = " + testString
+		testCB.write( testString )
+		if testCB.read( ) == testString:
+			print "Clipboard (xclip) copy test successful"
+		else:
+			print "Clipboard (xclip) copy test failed"
+		testCB.clear( )
+		if len( testCB.read( ) ):
+			print "Clipboard (xclip) clearing test failed"
+		else:
+			print "Clipboard (xclip) clearing test successful"
+
+	except Exception, e:
+		print "Clipboard (xclip) test raised an Exception:"
+		print e.message
 
 
 def testGenerator( testLen=512 ):
