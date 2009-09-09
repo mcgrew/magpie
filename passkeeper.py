@@ -14,14 +14,20 @@
 #	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from Crypto.Cipher import AES
-from hashlib import sha1
+from hashlib import sha256
+from base64 import b64encode
+from os import urandom
+from math import ceil
 
 def main( ):
 	pass
 
 def encode( data, password ):
-	return  AES.new( sha1( password ).digest( )[ :16 ], AES.MODE_CFB ).encrypt( data )
+	return  AES.new( sha256( password ).digest( ), AES.MODE_CFB ).encrypt( data )
 	
 def decode( data, password ):
-	return AES.new( sha1( password ).digest( )[ :16 ], AES.MODE_CFB ).decrypt( data )
+	return AES.new( sha256( password ).digest( ), AES.MODE_CFB ).decrypt( data )
+
+def generate( length=512 ):
+	return b64encode( urandom( length ))[ :length ]
 
