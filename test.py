@@ -19,17 +19,20 @@ from passkeeper import *
 from base64 import b64encode
 from random import randint
 
-def main( ):
+PASSED = True
 
+def main( ):
 	testString = "What a lovely bunch of coconuts!"
 	encodedString = encode( testString, 'password' )
 	decodedString = decode( encodedString, 'password' )
 
+	print "testString    = " + testString
 	print "encodedString = " + b64encode( encodedString )
 	print "decodedString = " + decodedString
 	if ( decodedString == testString ):
 		print "Encode/Decode test successful"
 	else:
+		failure( )
 		print "Encode/Decode test failed"
 	print
 
@@ -45,15 +48,26 @@ def main( ):
 	for i in xrange( 32 ):
 		testGenerator( randint( 1, 128 ))
 
+	# print the overall results
+	print
+	if PASSED:
+		print "All tests were successful"
+	else:
+		print "One or more tests did not succeed."
+
 
 def testGenerator( testLen=512 ):
 	testGen = generate( testLen )
 	if ( len( testGen ) == testLen ):
 		success = "successful"
 	else:
+		failure( )
 		success = "failed"
 	print "Generated password of length %4d (%s) - %s" % ( testLen, success, testGen )
 
+def failure( ):
+	global PASSED
+	PASSED = False
 
 if __name__ == "__main__":
 		main( )
