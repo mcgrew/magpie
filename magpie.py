@@ -17,17 +17,22 @@ from Crypto.Cipher import AES
 from hashlib import sha256
 from base64 import b64encode,b64decode
 import os 
+import os.path
+import sys
 from optparse import OptionParser
 from getpass import getpass
 import subprocess
 
 def parseOpts( ):
 	parser = OptionParser( version="%prog 0.1-pre", usage="%prog [options] [description|keywords]" )
-	parser.add_option( "-a", "--add", action="store_true", dest="add", help="Add a password to the stored passwords" )
+	parser.add_option( "-a", "--add", dest="username", 
+		help="Add a password to the stored passwords with the specified	username" )
 	parser.add_option( "-f", "--file", dest="file", default=os.getenv( 'HOME' )+os.sep+".passwd" , 
 		help="Use FILE instead of %default for storing/retrieving passwords" )
 	parser.add_option( "-g", "--generate", action="store_true", dest="generate", 
 		help="Generate a random password instead of prompting for one" )
+	parser.add_option( "-l", "--length", dest="length", default=16, type="int",
+		help="The length for the generated password. Defaults to %default" )
 	parser.add_option( "-r", "--remove", action="store_true", dest="remove", 
 		help="Remove specific password(s) from the database" )
 	parser.add_option( "-u", "--user", action="store_true", dest="get_user",
@@ -45,9 +50,37 @@ def parseOpts( ):
 def main( options, args ):
 	# prompt for password
 	password = getpass( "Password: " )
+	clipboard = Clipboard( )
+	if not ( os.path.exists( options.file )):
+		passData = "Username,Password,Description\n"
+	else:
+		passFile = open( options.file, 'r' )
+		passData = decode( passFile.read( ), password )
+		passFile.close( )
+
+	if options.print_all:
+		print( passData )
+		sys.exit( 0 )
+
+	if not ( passData[ :30 ] == "Username,Password,Description" ):
+		sys.stderr.write( "You entered an incorrect password\n" )
+		sys.exit( -1 )
+
+	if options.add:
+		if options.generate:
+			newPass = generate( options.length )
+			clipboard.write( newPass )
+		else:
+			newPass       = getpass( "Enter password for new account: " )
+			newPassVerify = getpass( "Re-enter password: " )
+			while not( newPass == newPassVerify ):
+				print( "\nPasswords do not match. please try again" )
+				newPass       = getpass( "Enter password for new account: " )
+				newPassVerify = getpass( "Re-enter password: " )
+		passData += ( "%s,%s,%s" % ( options.username, newPass, string.join( ' ', args )))
 
 def encode( data, password ):
-	return  AES.new( sha256( password ).digest( ), AES.MODE_CFB ).encrypt( data )
+	return AES.new( sha256( password ).digest( ), AES.MODE_CFB ).encrypt( data )
 	
 def decode( data, password ):
 	return AES.new( sha256( password ).digest( ), AES.MODE_CFB ).decrypt( data )

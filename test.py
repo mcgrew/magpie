@@ -15,13 +15,14 @@
 #	You should have received a copy of the GNU General Public License
 #	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from passkeeper import *
+from magpie import *
 from base64 import b64encode
 from random import randint
 
 PASSED = True
 
 def main( ):
+	global PASSED 
 	testString = "What a lovely bunch of coconuts!"
 	encodedString = encode( testString, 'password' )
 	decodedString = decode( encodedString, 'password' )
@@ -48,6 +49,9 @@ def main( ):
 	for i in xrange( 32 ):
 		testGenerator( randint( 1, 128 ))
 
+	PASSED = PASSED and cbTest( )
+	
+
 	# print the overall results
 	print
 	if PASSED:
@@ -55,44 +59,6 @@ def main( ):
 	else:
 		print "One or more tests did not succeed."
 	
-	try:
-		testCB = Clipboard('xsel')
-		testString = 'I want a shrubbery!' 
-		print "Test string = " + testString
-		testCB.write( testString )
-		if testCB.read( ) == testString:
-			print "Clipboard (xsel) copy test successful"
-		else:
-			print "Clipboard (xsel) copy test failed"
-		testCB.clear( )
-		if len( testCB.read( ) ):
-			print "Clipboard (xsel) clearing test failed"
-		else:
-			print "Clipboard (xsel) clearing test successful"
-
-	except Exception, e:
-		print "Clipboard (xsel) tests raised an Exception:"
-		print e.message
-		
-	try:
-		testCB = Clipboard( 'xclip' )
-		testString = 'I want a shrubbery!' 
-		print "Test string = " + testString
-		testCB.write( testString )
-		if testCB.read( ) == testString:
-			print "Clipboard (xclip) copy test successful"
-		else:
-			print "Clipboard (xclip) copy test failed"
-		testCB.clear( )
-		if len( testCB.read( ) ):
-			print "Clipboard (xclip) clearing test failed"
-		else:
-			print "Clipboard (xclip) clearing test successful"
-
-	except Exception, e:
-		print "Clipboard (xclip) test raised an Exception:"
-		print e.message
-
 
 def testGenerator( testLen=512 ):
 	testGen = generate( testLen )
@@ -106,6 +72,68 @@ def testGenerator( testLen=512 ):
 def failure( ):
 	global PASSED
 	PASSED = False
+
+def cbTest( ):
+	# Test the Clipboard class
+	print
+	try:
+		testCB = Clipboard('xsel')
+		testString = 'I want a shrubbery!' 
+		print "Test string = " + testString
+		testCB.write( testString )
+		if testCB.read( ) == testString:
+			print "Clipboard (xsel) copy test successful"
+			passed = True 
+		else:
+			print "Clipboard (xsel) copy test failed"
+			passed = False
+		testCB.clear( )
+		if len( testCB.read( ) ):
+			print "Clipboard (xsel) clearing test failed"
+			passed = False
+		else:
+			print "Clipboard (xsel) clearing test successful"
+			passed = True and passed
+
+	except Exception, e:
+		passed = False
+		print "Clipboard (xsel) tests raised an Exception:"
+		print e.message
+	
+	cbPassed = passed
+		
+	print
+	try:
+		testCB = Clipboard( 'xclip' )
+		testString = 'I want a shrubbery!' 
+		print "Test string = " + testString
+		testCB.write( testString )
+		if testCB.read( ) == testString:
+			print "Clipboard (xclip) copy test successful"
+			passed = True
+		else:
+			print "Clipboard (xclip) copy test failed"
+			passed = False
+		testCB.clear( )
+		if len( testCB.read( ) ):
+			print "Clipboard (xclip) clearing test failed"
+			passed = True and passed
+		else:
+			print "Clipboard (xclip) clearing test successful"
+			passed = False
+
+	except Exception, e:
+		passed = False
+		print "Clipboard (xclip) test raised an Exception:"
+		print e.message
+	
+	print
+	cbPassed = passed or cbPassed
+	if cbPassed:
+		print "Clipboard usability test successful"
+	else:
+		print "Clipboard usability test failed"
+	return cbPassed
 
 if __name__ == "__main__":
 		main( )
