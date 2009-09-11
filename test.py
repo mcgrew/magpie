@@ -18,14 +18,21 @@
 from magpie import *
 from base64 import b64encode
 from random import randint
+import os
 
 PASSED = True
 
 def main( ):
 	global PASSED 
+
+	testDB = '/tmp/passwd'
+	testPass = 'bork'
+	if os.path.exists( testDB ):
+		os.remove( testDB )
+	pdb = PasswordDB( testDB, testPass )
 	testString = "What a lovely bunch of coconuts!"
-	encodedString = encode( testString, 'password' )
-	decodedString = decode( encodedString, 'password' )
+	encodedString = pdb.encode( testString )
+	decodedString = pdb.decode( encodedString )
 
 	print "testString    = " + testString
 	print "encodedString = " + b64encode( encodedString )
@@ -49,7 +56,7 @@ def main( ):
 	for i in xrange( 32 ):
 		testGenerator( randint( 1, 128 ))
 
-	PASSED = PASSED and cbTest( )
+	PASSED = cbTest( ) and PASSED
 	
 
 	# print the overall results
@@ -61,7 +68,7 @@ def main( ):
 	
 
 def testGenerator( testLen=512 ):
-	testGen = generate( testLen )
+	testGen = PasswordDB.generate( testLen )
 	if ( len( testGen ) == testLen ):
 		success = "successful"
 	else:
