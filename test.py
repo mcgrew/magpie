@@ -20,44 +20,13 @@ from base64 import b64encode
 from random import randint
 import os
 
-PASSED = True
 
 def main( ):
-	global PASSED 
 
-	testDB = '/tmp/passwd'
-	testPass = 'bork'
-	if os.path.exists( testDB ):
-		os.remove( testDB )
-	pdb = PasswordDB( testDB, testPass )
-	testString = "What a lovely bunch of coconuts!"
-	encodedString = pdb.encode( testString )
-	decodedString = pdb.decode( encodedString )
-
-	print "testString    = " + testString
-	print "encodedString = " + b64encode( encodedString )
-	print "decodedString = " + decodedString
-	if ( decodedString == testString ):
-		print "Encode/Decode test successful"
-	else:
-		failure( )
-		print "Encode/Decode test failed"
-	print
-
-	testGenerator( 8 )
-	testGenerator( 16 )
-	testGenerator( 47 )
-	testGenerator( 64 )
-	testGenerator( 128 )
-	testGenerator( 256 )
-	testGenerator( 512 )
-	testGenerator( 1024 )
-	
-	for i in xrange( 32 ):
-		testGenerator( randint( 1, 128 ))
+	PASSED = cbTest( ) and True 
 
 	PASSED = cbTest( ) and PASSED
-	
+	PASSED = DBTest( ) and PASSED	
 
 	# print the overall results
 	print
@@ -68,17 +37,16 @@ def main( ):
 	
 
 def testGenerator( testLen=512 ):
+	returnvalue = True
 	testGen = PasswordDB.generate( testLen )
 	if ( len( testGen ) == testLen ):
 		success = "successful"
 	else:
-		failure( )
 		success = "failed"
+		returnvalue = false
 	print "Generated password of length %4d (%s) - %s" % ( testLen, success, testGen )
+	return returnvalue
 
-def failure( ):
-	global PASSED
-	PASSED = False
 
 def cbTest( ):
 	# Test the Clipboard class
@@ -142,6 +110,107 @@ def cbTest( ):
 		print "Clipboard usability test failed"
 	return cbPassed
 
+def DBTest( ):
+	returnValue = True
+
+	print
+	print "################# PasswordDB Class tests: #####################"
+	
+	print
+	testDB = '/tmp/passwd'
+	testPass = 'bork'
+	if os.path.exists( testDB ):
+		os.remove( testDB )
+	pdb = PasswordDB( testDB, testPass )
+	testString = "What a lovely bunch of coconuts!"
+	encodedString = pdb.encode( testString )
+	decodedString = pdb.decode( encodedString )
+
+	print "testString    = " + testString
+	print "encodedString = " + b64encode( encodedString )
+	print "decodedString = " + decodedString
+	if ( decodedString == testString ):
+		print "Encode/Decode test successful"
+	else:
+		returnValue = false
+		print "Encode/Decode test failed"
+	print
+
+	for i in xrange( 32 ):
+		returnValue = testGenerator( randint( 1, 128 )) and returnValue
+
+	print
+	testData = "Username\tPassword\tDescription\n" + \
+				"user1\tbork_bork\twww.bork.com is borked\n" + \
+				"user2\tblah_blah\twww.blah.com login\n" + \
+				"user3\twoof_woof\tThe biggest of the big dogs" 
+	testData = testData.strip( )
+	pdb.import_( testData )
+
+	print "Test data:"
+	print testData
+
+	print
+	if pdb.export( ) == testData:
+		print "Import/Export test successful"
+	else:
+		print "Import/Export test failed"
+		print "New Data was:"
+		print pdb.export( )
+		returnValue = False
+	
+	print
+	pdb.close( )
+	pdb = PasswordDB( testDB, testPass )
+	if pdb.export( ) == testData:
+		print "Save/Read test successful"
+	else:
+		print "Save/Read test failed"
+		print "New Data was:"
+		print pdb.export( )
+		returnValue = False
+
+	print
+	if pdb.find( "biggest", "dogs" ) ==  "user3\twoof_woof\tThe biggest of the big dogs":
+		print "Find test successful"
+	else:
+		print "Find test failed looking for ('biggest', 'dogs')"
+		print "Find returned: " + pdb.find( "biggest", "dogs" )
+		print "Instead of   : user3\twoof_woof\tThe biggest of the big dogs"
+		returnValue = False
+	
+	print
+	if PasswordDB.mask( pdb.find( "bork" )) == "user1\t*********\twww.bork.com is borked":
+		print "Mask Test successful"
+	else:
+		print "Mask Test failed"
+		print "Mask returned: "+PasswordDB.mask( pdb.find( "bork" ))
+		print "Instead of   : user1\t*********\twww.bork.com is borked"
+		returnValue = False
+	
+	print
+	pdb.add( "user4", "jomo_baru!", "The leader of the pack" )
+	if pdb.export( ) == testData+"\nuser4\tjomo_baru!\tThe leader of the pack":
+		print "Add test successful"
+	else:
+		print "Add test failed"
+		print "New Data was:"
+		print pdb.export( )
+		returnValue = False
+
+	print
+	removeTest = pdb.remove( "leader" )
+	if removeTest == "user4\tjomo_baru!\tThe leader of the pack" and pdb.export( ) == testData:
+		print "Remove test passed"
+	else:
+		print "Remove test failed looking for 'leader'"
+		print "Remove returned: "+removeTest
+		print "New Data was:"
+		print pdb.export( )
+		returnValue = False
+
+	return returnValue
+	
 if __name__ == "__main__":
 		main( )
 

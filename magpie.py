@@ -41,6 +41,7 @@ def parseOpts( ):
 		help="Retrieve the username instead of the password for the account" ),
 	parser.add_option( "--debug", action="store_true",
 		help="Print debugging messages to stderr" )
+	# should this be --list?
 	parser.add_option( "--all", action="store_true", dest="print_all", 
 		help="Print entire database to standard output. Make sure no one is watching!" )
 	parser.add_option( "--find", action="store_true", dest="find",
@@ -53,16 +54,22 @@ def parseOpts( ):
 	parser.add_option( "--import", dest="importFile",
 		help="Import a password database from a delimited text file. This will overwrite any passwords in your " +
 		"current database" );
-	parser.add_option( "--print", action="store_true", dest="print_", 
+	parser.add_option( "-p", "--print", action="store_true", dest="print_", 
 		help="Print the password to standard output instead of copying it to the clipboard" )
 
 	return parser.parse_args( )
 
 
 def main( options, args ):
+	clipboard = Clipboard( )
+	if options.generate and not options.username:
+		if options.print_:
+			print( PasswordDB.generate( options.length ))
+		else:
+			clipboard.write( PasswordDB.generate( options.length ))
+		sys.exit( 0 )
 	# prompt for password
 	password = getpass( "Password: " )
-	clipboard = Clipboard( )
 
 	#Remove the old file if it exist and we are importing new data.
 	if options.importFile and os.path.exists( options.file ):
@@ -128,9 +135,9 @@ def main( options, args ):
 		requested = entry[ 1 ]
 
 	if options.print_:
-		print( entry[ 0 ] )
+		print( requested )
 	else:
-		clipboard.write( entry[ 0 ] )
+		clipboard.write( requested )
 
 
 	pdb.close( )
@@ -148,15 +155,15 @@ class PasswordDB( object ):
 
 	def close( self ):
 		passFile = open( self.filename, 'w' )
-		passFile.write( self.cipher.encrypt( self.data ))
+		passFile.write( self.encode( self.data ))
 		passFile.close( )
 		
 	def open( self ):
 		if not ( os.path.exists( self.filename )):
 			self.data = "Username\tPassword\tDescription\n"
 			return False
-		passFile = open( options.file, 'r' )
-		self.data =  self.cipher.decrypt( passFile.read( ))
+		passFile = open( self.filename, 'r' )
+		self.data =  self.decode( passFile.read( ))
 		passFile.close( )
 		return True
 
@@ -169,27 +176,28 @@ class PasswordDB( object ):
 			self.data = self.data.replace( "\t\t", "\t" )
 
 	def add( self, username, password, description ):
+		if not self.data[ -1 ] == '\n':
+			self.data += '\n'
 		self.data += "%s\t%s\t%s" % ( username, password, description )
 	
 	def find( self, *keywords ):
 		lines = self.data.split( '\n' )
-		for i in xrange( len( lines )):
+		for i in xrange( 1, len( lines )):
+			correctLine = True
 			for j in xrange( len( keywords )):
-				if not ( keywords[ j ] in lines[ i ] ):
-					continue
-			return lines[ i ]
+				correctLine = correctLine and ( keywords[ j ] in lines[ i ] )
+			if correctLine:
+				return lines[ i ]
 		return False
 	
 	def remove( self, *keywords ):
+		found = self.find( *keywords )
+		if not found:
+			return False
 		lines = self.data.split( '\n' )
-		for i in xrange( len( lines )):
-			for j in xrange( len( keywords )):
-				if not ( keywords[ j ] in lines[ i ] ):
-					continue
-			returnvalue =  lines.pop( i )
-			self.data = str.join( '\n', lines )
-			return returnvalue
-		return False
+		returnvalue =  lines.pop( lines.index( found ) )
+		self.data = str.join( '\n', lines )
+		return returnvalue
 
 	def mask( dbentry ):
 		lines = dbentry.split( '\n' )
