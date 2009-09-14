@@ -145,29 +145,29 @@ def DBTest( ):
 				"user2\tblah_blah\twww.blah.com login\n" + \
 				"user3\twoof_woof\tThe biggest of the big dogs" 
 	testData = testData.strip( )
-	pdb.import_( testData )
+	pdb.load( testData )
 
 	print "Test data:"
 	print testData
 
 	print
-	if pdb.export( ) == testData:
+	if pdb.dump( ) == testData:
 		print "Import/Export test successful"
 	else:
 		print "Import/Export test failed"
 		print "New Data was:"
-		print pdb.export( )
+		print pdb.dump( )
 		returnValue = False
 	
 	print
 	pdb.close( )
 	pdb = PasswordDB( testDB, testPass )
-	if pdb.export( ) == testData:
+	if pdb.dump( ) == testData:
 		print "Save/Read test successful"
 	else:
 		print "Save/Read test failed"
 		print "New Data was:"
-		print pdb.export( )
+		print pdb.dump( )
 		returnValue = False
 
 	print
@@ -190,23 +190,23 @@ def DBTest( ):
 	
 	print
 	pdb.add( "user4", "jomo_baru!", "The leader of the pack" )
-	if pdb.export( ) == testData+"\nuser4\tjomo_baru!\tThe leader of the pack":
+	if pdb.dump( ) == testData+"\nuser4\tjomo_baru!\tThe leader of the pack":
 		print "Add test successful"
 	else:
 		print "Add test failed"
 		print "New Data was:"
-		print pdb.export( )
+		print pdb.dump( )
 		returnValue = False
 
 	print
 	removeTest = pdb.remove( "leader" )
-	if removeTest == "user4\tjomo_baru!\tThe leader of the pack" and pdb.export( ) == testData:
+	if removeTest == "user4\tjomo_baru!\tThe leader of the pack" and pdb.dump( ) == testData:
 		print "Remove test passed"
 	else:
 		print "Remove test failed looking for 'leader'"
 		print "Remove returned: "+removeTest
 		print "New Data was:"
-		print pdb.export( )
+		print pdb.dump( )
 		returnValue = False
 
 	return returnValue

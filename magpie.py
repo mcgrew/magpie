@@ -17,7 +17,6 @@ from Crypto.Cipher import AES
 from hashlib import sha256
 from base64 import b64encode,b64decode
 import os 
-import os.path
 import sys
 from optparse import OptionParser
 from getpass import getpass
@@ -25,25 +24,27 @@ import subprocess
 from tempfile import mkstemp
 from time import sleep
 
+#	To Do: 
+#		add an --edit option
+#		change PasswordDB import/export to something else (toString and fromString)?
+
 def parseOpts( ):
-	parser = OptionParser( version="%prog 0.1-pre", usage="%prog [options] [description|keywords]" )
+	parser = OptionParser( version="%prog 0.1-alpha-2009.09.12", usage="%prog [options] [description|keywords]" )
 	parser.add_option( "-a", "--add", dest="username", 
 		help="Add a password to the stored passwords with the specified username" )
-	parser.add_option( "-f", "--file", dest="file", default=os.getenv( 'HOME' )+os.sep+".passwd" , 
+	parser.add_option( "-f", "--file", dest="file", default=os.getenv( 'HOME' )+os.sep+".magpie"+os.sep+"database" , 
 		help="Use FILE instead of %default for storing/retrieving passwords" )
-	parser.add_option( "-g", "--generate", action="store_true", dest="generate", 
-		help="Generate a random password instead of prompting for one" )
-	parser.add_option( "-l", "--length", dest="length", default=16, type="int",
-		help="The length for the generated password. Defaults to %default" )
+	parser.add_option( "-g", "--generate", dest="generate", default=0, type="int",
+		help="Generate a random password of the specified length instead of prompting for one" )
 	parser.add_option( "-r", "--remove", action="store_true", dest="remove", 
 		help="Remove specific password(s) from the database" )
 	parser.add_option( "-u", "--user", action="store_true", dest="get_user",
 		help="Retrieve the username instead of the password for the account" ),
-	parser.add_option( "--debug", action="store_true",
-		help="Print debugging messages to stderr" )
-	# should this be --list?
-	parser.add_option( "--all", action="store_true", dest="print_all", 
+	parser.add_option( "--debug", action="store_true", help="Print debugging messages to stderr" )
+	parser.add_option( "--list", action="store_true", dest="print_all", 
 		help="Print entire database to standard output. Make sure no one is watching!" )
+	parser.add_option( "--change-password", action="store_true", dest="change",
+		help="Change the master password for the database" )
 	parser.add_option( "--find", action="store_true", dest="find",
 		help="Find an entry in the database and print its value with the password masked" )
 #	parser.add_option( "-e", "--edit", action="store_true", dest="edit",
@@ -64,12 +65,12 @@ def main( options, args ):
 	clipboard = Clipboard( )
 	if options.generate and not options.username:
 		if options.print_:
-			print( PasswordDB.generate( options.length ))
+			sys.stdout.write( PasswordDB.generate( options.generate ))
 		else:
-			clipboard.write( PasswordDB.generate( options.length ))
+			clipboard.write( PasswordDB.generate( options.generate ))
 		sys.exit( 0 )
 	# prompt for password
-	password = getpass( "Password: " )
+	password = getpass( "Master Password: " )
 
 	#Remove the old file if it exist and we are importing new data.
 	if options.importFile and os.path.exists( options.file ):
@@ -81,32 +82,55 @@ def main( options, args ):
 		sys.stderr.write( str( e ) + '\n' )
 		sys.exit( -1 )
 
+	if options.change:
+		newPass       = getpass( "Enter new master password: " )
+		newPassVerify = getpass( "Re-enter password: " )
+		while not( newPass == newPassVerify ):
+			print( "\nPasswords do not match. please try again" )
+			newPass       = getpass( "Enter new master password: " )
+			newPassVerify = getpass( "Re-enter password: " )
+		pdb.password = newPass
+		print( "Master Password Changed" )
+		pdb.flush( )
+		sys.exit( 0 )
+
 	if options.print_all:
-		print( pdb.export( ))
+		lines = pdb.dump( ).split( '\n', 1 )
+		print( lines[ 0 ] )
+		print( PasswordDB.mask( lines[ 1 ] ))
 		sys.exit( 0 )
 
 	if options.exportFile:
 		if options.exportFile == '-':
-			sys.stdout.write( pdb.export( ) )
+			sys.stdout.write( pdb.dump( ) )
 		else:
 			exportFile = open( options.exportFile, 'w' )
-			exportFile.write( pdb.export( ))
+			exportFile.write( pdb.dump( ))
 			exportFile.close( )
 		sys.exit( 0 )
 
 	if options.importFile:
 		if options.importFile == '-':
-			pdb.import_( sys.stdin.read( ))
+			pdb.load( sys.stdin.read( ))
 		else:
 			importFile = open( options.importFile )
-			pdb.import_( importFile.read( ))
+			pdb.load( importFile.read( ))
 			importFile.close( )
-		pdb.close( )
+		pdb.flush( )
 		sys.exit( 0 )
 
+	if options.remove:
+		removed = pdb.remove( *args )
+		if removed:
+			sys.stderr.write( "Removed the following entry:\n%s\n" % removed)
+		else:
+			sys.stderr.write( "Unable to locate the specified entry\n" )
+		pdb.flush( )
+
+	# BUG remove and add at the same time isn't working properly.
 	if options.username:
 		if options.generate:
-			newPass = generate( options.length )
+			newPass = PasswordDB.generate( options.generate )
 			clipboard.write( newPass )
 		else:
 			newPass       = getpass( "Enter password for new account: " )
@@ -118,15 +142,20 @@ def main( options, args ):
 		pdb.add( options.username, newPass, str.join( ' ', args ))
 		if options.generate:
 			sys.stderr.write( "Generated password saved\n" )
-			
+		pdb.flush( )
+
+	# The exit is here to allow a person to add and remove at the same time.
+	# In other words, replace an entry.
 	if options.remove:
-		sys.stderr.write( "Removed the following entry:\n"+pdb.remove( *args ))
-		pdb.close( )
 		sys.exit( 0 )
 	
 	if options.find:
-		print( pdb.data.split( '\n' )[ 0 ] )
-		print( PasswordDB.mask( pdb.find( )))
+		found = pdb.find( args )
+		if found:
+			print( pdb.data.split( '\n' )[ 0 ] )
+			print( PasswordDB.mask( ))
+		else:
+			print "Unable to locate entry"
 
 	entry = pdb.find( *args ).split( '\t', 2 )
 	if options.get_user:
@@ -135,10 +164,9 @@ def main( options, args ):
 		requested = entry[ 1 ]
 
 	if options.print_:
-		print( requested )
+		sys.stdout.write( requested )
 	else:
 		clipboard.write( requested )
-
 
 	pdb.close( )
 
@@ -152,12 +180,18 @@ class PasswordDB( object ):
 				sys.stderr.write( "PasswordDB appeared to contain:\n"+self.data+"\n" )
 			raise ValueError( "You entered an incorrect password" )
 			
-
-	def close( self ):
-		passFile = open( self.filename, 'w' )
+	def flush( self ):
+		if os.path.exists( self.filename ):
+			os.rename( self.filename, self.filename+'~' )
+		if not os.path.exists( os.path.dirname( self.filename )):
+			os.makedirs( os.path.dirname( self.filename ), 0755 )
+		passFile = open( self.filename, 'w', 0600 )
 		passFile.write( self.encode( self.data ))
 		passFile.close( )
 		
+	def close( self ):
+		self.flush( )
+
 	def open( self ):
 		if not ( os.path.exists( self.filename )):
 			self.data = "Username\tPassword\tDescription\n"
@@ -167,10 +201,10 @@ class PasswordDB( object ):
 		passFile.close( )
 		return True
 
-	def export( self ):
+	def dump( self ):
 		return self.data
 	
-	def import_( self, data ):
+	def load( self, data ):
 		self.data = data.strip( )
 		while( "\t\t" in self.data ):
 			self.data = self.data.replace( "\t\t", "\t" )
@@ -185,7 +219,7 @@ class PasswordDB( object ):
 		for i in xrange( 1, len( lines )):
 			correctLine = True
 			for j in xrange( len( keywords )):
-				correctLine = correctLine and ( keywords[ j ] in lines[ i ] )
+				correctLine = correctLine and ( keywords[ j ].lower( ) in lines[ i ].lower( ) )
 			if correctLine:
 				return lines[ i ]
 		return False
@@ -214,7 +248,7 @@ class PasswordDB( object ):
 	def decode( self, text ):
 		return AES.new( sha256( self.password ).digest( ), AES.MODE_CFB ).decrypt( text )
 
-	def generate( length=512 ):
+	def generate( length ):
 		# get a random string containing base64 encoded data, replacing /+ with  !_
 		return b64encode( os.urandom( length ), "!_" )[ :length ]
 	generate = staticmethod( generate )
