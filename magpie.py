@@ -23,13 +23,20 @@ from getpass import getpass
 import subprocess
 from tempfile import mkstemp
 from time import sleep
+import zlib
 
 #	To Do: 
 #		add an --edit option
-#		change PasswordDB import/export to something else (toString and fromString)?
+#		fix the formatting of --list
+#		add the ability to --force certain types of characters
+#		add an --append option as an alternative to --import
+#		add an --interactive option?
+#		use regular expressions re.split( ) for splitting strings instead of str.split( )
+#		consider the symbols @% for password generation
+#		add a --sub option for substituting characters in the generated password
 
 def parseOpts( ):
-	parser = OptionParser( version="%prog 0.1-alpha-2009.09.12", usage="%prog [options] [description|keywords]" )
+	parser = OptionParser( version="%prog 0.1-alpha-2009.09.15", usage="%prog [options] [description|keywords]" )
 	parser.add_option( "-a", "--add", dest="username", 
 		help="Add a password to the stored passwords with the specified username" )
 	parser.add_option( "-f", "--file", dest="file", default=os.getenv( 'HOME' )+os.sep+".magpie"+os.sep+"database" , 
@@ -42,7 +49,7 @@ def parseOpts( ):
 		help="Retrieve the username instead of the password for the account" ),
 	parser.add_option( "--debug", action="store_true", help="Print debugging messages to stderr" )
 	parser.add_option( "--list", action="store_true", dest="print_all", 
-		help="Print entire database to standard output. Make sure no one is watching!" )
+		help="Print entire database to standard output with the passwords masked" )
 	parser.add_option( "--change-password", action="store_true", dest="change",
 		help="Change the master password for the database" )
 	parser.add_option( "--find", action="store_true", dest="find",
@@ -51,10 +58,10 @@ def parseOpts( ):
 #		help="Edit the file in the default system text editor and import the result as the new database" )
 	parser.add_option( "--export", dest="exportFile", 
 		help="Export the password database to a delimited text file. Keep this file secure, as it will contain " +
-		"all of your passwords in plain text." )
+		"all of your passwords in plain text. Specify - as the filename to print to stdout." )
 	parser.add_option( "--import", dest="importFile",
 		help="Import a password database from a delimited text file. This will overwrite any passwords in your " +
-		"current database" );
+		"current database. Specify - as the filename to read from stdin" );
 	parser.add_option( "-p", "--print", action="store_true", dest="print_", 
 		help="Print the password to standard output instead of copying it to the clipboard" )
 
@@ -186,7 +193,7 @@ class PasswordDB( object ):
 		if not os.path.exists( os.path.dirname( self.filename )):
 			os.makedirs( os.path.dirname( self.filename ), 0755 )
 		passFile = open( self.filename, 'w', 0600 )
-		passFile.write( self.encode( self.data ))
+		passFile.write( b64encode( self.encode( zlib.compress( self.data[::-1], 9 ))))
 		passFile.close( )
 		
 	def close( self ):
@@ -197,7 +204,7 @@ class PasswordDB( object ):
 			self.data = "Username\tPassword\tDescription\n"
 			return False
 		passFile = open( self.filename, 'r' )
-		self.data =  self.decode( passFile.read( ))
+		self.data =  zlib.decompress( self.decode( b64decode( passFile.read( ))))[::-1]
 		passFile.close( )
 		return True
 
