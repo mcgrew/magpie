@@ -281,11 +281,9 @@ class Clipboard( object ):
 		Returns the contents of the clipboard
 		"""
 		if self.backend == 'xsel':
-			return subprocess.Popen([ 'xsel', '-o' ], stdout=subprocess.PIPE,
-				stderr=subprocess.PIPE ).stdout.read( )
+			return subprocess.Popen([ 'xsel', '-o' ], stdout=subprocess.PIPE,).stdout.read( )
 		if self.backend == 'xclip':
-			return subprocess.Popen([ 'xclip', '-o' ], stdout=subprocess.PIPE,
-				stderr=subprocess.PIPE ).stdout.read( )
+			return subprocess.Popen([ 'xclip', '-o' ], stdout=subprocess.PIPE,).stdout.read( )
 			
 
 	def write( self, text ):
@@ -294,25 +292,22 @@ class Clipboard( object ):
 		"""
 		if self.backend == 'xsel':
 			# copy to both XA_PRIMARY and XA_CLIPBOARD
-			proc = subprocess.Popen([ 'xsel', '-pi' ], stdout=subprocess.PIPE,
-				stderr=subprocess.PIPE, stdin=subprocess.PIPE )
+			proc = subprocess.Popen([ 'xsel', '-p', '-i' ], stdout=subprocess.PIPE, stdin=subprocess.PIPE )
 			proc.stdin.write( text )
 			proc.stdin.close( )
 			proc.wait( )
-			proc = subprocess.Popen([ 'xsel', '-bi' ], stdout=subprocess.PIPE,
-				stderr=subprocess.PIPE, stdin=subprocess.PIPE )
+			proc = subprocess.Popen([ 'xsel', '-b', '-i' ], stdout=subprocess.PIPE, stdin=subprocess.PIPE )
 			proc.stdin.write( text )
 			proc.stdin.close( )
 			proc.wait( )
 			return
 		if self.backend == 'xclip':
 			# copy to both XA_PRIMARY and XA_CLIPBOARD
-			proc = subprocess.Popen([ 'xclip', '-selection', 'primary', '-i' ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE )
+			proc = subprocess.Popen([ 'xclip', '-selection', 'primary', '-i' ], stdout=subprocess.PIPE, stdin=subprocess.PIPE )
 			proc.stdin.write( text )
 			proc.stdin.close( )
 			proc.wait( )
-			proc = subprocess.Popen([ 'xclip', '-selection', 'clipboard', '-i' ], stdout=subprocess.PIPE,
-				stderr=subprocess.PIPE, stdin=subprocess.PIPE )
+			proc = subprocess.Popen([ 'xclip', '-selection', 'clipboard', '-i' ], stdout=subprocess.PIPE, stdin=subprocess.PIPE )
 			proc.stdin.write( text )
 			proc.stdin.close( )
 			proc.wait( )
