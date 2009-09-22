@@ -24,6 +24,7 @@ import subprocess
 from tempfile import mkstemp
 from time import sleep
 import zlib
+import re
 
 #	To Do: 
 #		add an --edit option
@@ -31,12 +32,11 @@ import zlib
 #		add the ability to --force certain types of characters
 #		add an --append option as an alternative to --import
 #		add an --interactive option?
-#		use regular expressions re.split( ) for splitting strings instead of str.split( )
 #		consider the symbols @% for password generation
 #		add a --sub option for substituting characters in the generated password
 
 def parseOpts( ):
-	parser = OptionParser( version="%prog 0.1-alpha-2009.09.15", usage="%prog [options] [description|keywords]" )
+	parser = OptionParser( version="%prog 0.1-alpha-2009.09.22", usage="%prog [options] [description|keywords]" )
 	parser.add_option( "-a", "--add", dest="username", 
 		help="Add a password to the stored passwords with the specified username" )
 	parser.add_option( "-f", "--file", dest="file", default=os.getenv( 'HOME' )+os.sep+".magpie"+os.sep+"database" , 
@@ -181,10 +181,11 @@ class PasswordDB( object ):
 	def __init__( self, filename, password ):
 		self.filename = filename
 		self.password = password
-		self.open( )
-		if not ( self.data[ :29 ] == "Username\tPassword\tDescription" ):
-			if options.debug:
-				sys.stderr.write( "PasswordDB appeared to contain:\n"+self.data+"\n" )
+		try:
+			self.open( )
+			if not ( self.data[ :29 ] == "Username\tPassword\tDescription" ):
+				raise ValueError
+		except ( zlib.error,ValueError ):
 			raise ValueError( "You entered an incorrect password" )
 			
 	def flush( self ):
@@ -212,14 +213,16 @@ class PasswordDB( object ):
 		return self.data
 	
 	def load( self, data ):
-		self.data = data.strip( )
-		while( "\t\t" in self.data ):
-			self.data = self.data.replace( "\t\t", "\t" )
+		data = data.strip( ).split( "\n" )
+		self.data = ""
+		for i in data:
+			self.data += str.join( '\t', re.split( "(\s*\t\s*)+", i.strip( ), 2)[::2]) + '\n'
+		self.data = self.data.strip( )
 
 	def add( self, username, password, description ):
 		if not self.data[ -1 ] == '\n':
 			self.data += '\n'
-		self.data += "%s\t%s\t%s" % ( username, password, description )
+		self.data += str.join( '\t', ( username.strip( ), password.strip( ), description.strip( ) ))
 	
 	def find( self, *keywords ):
 		lines = self.data.split( '\n' )

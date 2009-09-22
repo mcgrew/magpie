@@ -31,7 +31,7 @@ def main( ):
 	# print the overall results
 	print
 	if PASSED:
-		print "All tests were successful"
+		print "All tests were passed"
 	else:
 		print "One or more tests did not succeed."
 	
@@ -40,7 +40,7 @@ def testGenerator( testLen=512 ):
 	returnvalue = True
 	testGen = PasswordDB.generate( testLen )
 	if ( len( testGen ) == testLen ):
-		success = "successful"
+		success = "passed"
 	else:
 		success = "failed"
 		returnvalue = false
@@ -57,7 +57,7 @@ def cbTest( ):
 		print "Test string = " + testString
 		testCB.write( testString )
 		if testCB.read( ) == testString:
-			print "Clipboard (xsel) copy test successful"
+			print "Clipboard (xsel) copy test passed"
 			passed = True 
 		else:
 			print "Clipboard (xsel) copy test failed"
@@ -67,13 +67,13 @@ def cbTest( ):
 			print "Clipboard (xsel) clearing test failed"
 			passed = False
 		else:
-			print "Clipboard (xsel) clearing test successful"
+			print "Clipboard (xsel) clearing test passed"
 			passed = True and passed
 
 	except Exception, e:
 		passed = False
 		print "Clipboard (xsel) tests raised an Exception:"
-		print e.message
+		print str( e )
 	
 	cbPassed = passed
 		
@@ -84,7 +84,7 @@ def cbTest( ):
 		print "Test string = " + testString
 		testCB.write( testString )
 		if testCB.read( ) == testString:
-			print "Clipboard (xclip) copy test successful"
+			print "Clipboard (xclip) copy test passed"
 			passed = True
 		else:
 			print "Clipboard (xclip) copy test failed"
@@ -94,18 +94,18 @@ def cbTest( ):
 			print "Clipboard (xclip) clearing test failed"
 			passed = True and passed
 		else:
-			print "Clipboard (xclip) clearing test successful"
+			print "Clipboard (xclip) clearing test passed"
 			passed = False
 
 	except Exception, e:
 		passed = False
 		print "Clipboard (xclip) test raised an Exception:"
-		print e.message
+		print str( e )
 	
 	print
 	cbPassed = passed or cbPassed
 	if cbPassed:
-		print "Clipboard usability test successful"
+		print "Clipboard usability test passed"
 	else:
 		print "Clipboard usability test failed"
 	return cbPassed
@@ -130,7 +130,7 @@ def DBTest( ):
 	print "encodedString = " + b64encode( encodedString )
 	print "decodedString = " + decodedString
 	if ( decodedString == testString ):
-		print "Encode/Decode test successful"
+		print "Encode/Decode test passed"
 	else:
 		returnValue = false
 		print "Encode/Decode test failed"
@@ -140,19 +140,23 @@ def DBTest( ):
 		returnValue = testGenerator( randint( 1, 128 )) and returnValue
 
 	print
+	inputData = "Username\t  Password\t\tDescription\n" + \
+				"user1\tbork_bork\t www.bork.com is borked\n" + \
+				"user2\t\t \tblah_blah\twww.blah.com\tlogin\n" + \
+				"user3  \twoof_woof \tThe biggest of the big dogs" 
 	testData = "Username\tPassword\tDescription\n" + \
 				"user1\tbork_bork\twww.bork.com is borked\n" + \
-				"user2\tblah_blah\twww.blah.com login\n" + \
+				"user2\tblah_blah\twww.blah.com\tlogin\n" + \
 				"user3\twoof_woof\tThe biggest of the big dogs" 
 	testData = testData.strip( )
-	pdb.load( testData )
+	pdb.load( inputData )
 
 	print "Test data:"
-	print testData
+	print inputData
 
 	print
 	if pdb.dump( ) == testData:
-		print "Import/Export test successful"
+		print "Import/Export test passed"
 	else:
 		print "Import/Export test failed"
 		print "New Data was:"
@@ -163,7 +167,7 @@ def DBTest( ):
 	pdb.close( )
 	pdb = PasswordDB( testDB, testPass )
 	if pdb.dump( ) == testData:
-		print "Save/Read test successful"
+		print "Save/Read test passed"
 	else:
 		print "Save/Read test failed"
 		print "New Data was:"
@@ -172,7 +176,7 @@ def DBTest( ):
 
 	print
 	if pdb.find( "biggest", "dogs" ) ==  "user3\twoof_woof\tThe biggest of the big dogs":
-		print "Find test successful"
+		print "Find test passed"
 	else:
 		print "Find test failed looking for ('biggest', 'dogs')"
 		print "Find returned: " + pdb.find( "biggest", "dogs" )
@@ -181,7 +185,7 @@ def DBTest( ):
 	
 	print
 	if PasswordDB.mask( pdb.find( "bork" )) == "user1\t*********\twww.bork.com is borked":
-		print "Mask Test successful"
+		print "Mask Test passed"
 	else:
 		print "Mask Test failed"
 		print "Mask returned: "+PasswordDB.mask( pdb.find( "bork" ))
@@ -189,9 +193,11 @@ def DBTest( ):
 		returnValue = False
 	
 	print
-	pdb.add( "user4", "jomo_baru!", "The leader of the pack" )
+	pdb.add( "user4", "jomo_baru!  ", "\tThe leader of the pack" )
 	if pdb.dump( ) == testData+"\nuser4\tjomo_baru!\tThe leader of the pack":
-		print "Add test successful"
+		print "Add test passed"
+		print "New Data was:"
+		print pdb.dump( )
 	else:
 		print "Add test failed"
 		print "New Data was:"
@@ -202,6 +208,8 @@ def DBTest( ):
 	removeTest = pdb.remove( "leader" )
 	if removeTest == "user4\tjomo_baru!\tThe leader of the pack" and pdb.dump( ) == testData:
 		print "Remove test passed"
+		print "New Data was:"
+		print pdb.dump( )
 	else:
 		print "Remove test failed looking for 'leader'"
 		print "Remove returned: "+removeTest
