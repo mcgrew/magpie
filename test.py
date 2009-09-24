@@ -184,7 +184,7 @@ def DBTest( ):
 		returnValue = False
 	
 	print
-	if PasswordDB.mask( pdb.find( "bork" )) == "user1\t*********\twww.bork.com is borked":
+	if PasswordDB.mask( pdb.find( "bork" )) == "user1\t(9)\twww.bork.com is borked":
 		print "Mask Test passed"
 	else:
 		print "Mask Test failed"

@@ -28,7 +28,6 @@ import re
 
 #	To Do: 
 #		add an --edit option
-#		fix the formatting of --list
 #		add the ability to --force certain types of characters
 #		add an --append option as an alternative to --import
 #		add an --interactive option?
@@ -36,7 +35,7 @@ import re
 #		add a --sub option for substituting characters in the generated password
 
 def parseOpts( ):
-	parser = OptionParser( version="%prog 0.1-alpha-2009.09.22", usage="%prog [options] [description|keywords]" )
+	parser = OptionParser( version="%prog 0.1-alpha-2009.09.24", usage="%prog [options] [description|keywords]" )
 	parser.add_option( "-a", "--add", dest="username", 
 		help="Add a password to the stored passwords with the specified username" )
 	parser.add_option( "-f", "--file", dest="file", default=os.getenv( 'HOME' )+os.sep+".magpie"+os.sep+"database" , 
@@ -102,9 +101,10 @@ def main( options, args ):
 		sys.exit( 0 )
 
 	if options.print_all:
-		lines = pdb.dump( ).split( '\n', 1 )
-		print( lines[ 0 ] )
-		print( PasswordDB.mask( lines[ 1 ] ))
+		lines = pdb.dump( ).split( '\n' )
+		print( "%20s %8s %s" % PasswordDB.splitLine( lines[ 0 ] ))
+		for line in lines[ 1: ]:
+			print( "%20s %8s %s" % PasswordDB.splitLine( PasswordDB.mask( line )))
 		sys.exit( 0 )
 
 	if options.exportFile:
@@ -216,7 +216,7 @@ class PasswordDB( object ):
 		data = data.strip( ).split( "\n" )
 		self.data = ""
 		for i in data:
-			self.data += str.join( '\t', re.split( "(\s*\t\s*)+", i.strip( ), 2)[::2]) + '\n'
+			self.data += str.join( '\t', PasswordDB.splitLine( i.strip( )) ) + '\n'
 		self.data = self.data.strip( )
 
 	def add( self, username, password, description ):
@@ -247,7 +247,7 @@ class PasswordDB( object ):
 		lines = dbentry.split( '\n' )
 		for i in xrange( len( lines )):
 			newLine = lines[ i ].split( '\t', 2)
-			newLine[ 1 ] = '*' * len( newLine[ 1 ])
+			newLine[ 1 ] = '(%d)' % len( newLine[ 1 ])
 			lines[ i ] = str.join( '\t', newLine )
 		return str.join( '\n', lines )
 	mask = staticmethod( mask )
@@ -262,6 +262,10 @@ class PasswordDB( object ):
 		# get a random string containing base64 encoded data, replacing /+ with  !_
 		return b64encode( os.urandom( length ), "!_" )[ :length ]
 	generate = staticmethod( generate )
+
+	def splitLine( line ):
+		return tuple( re.split( "(\s*\t\s*)+", line, 2 )[::2] )
+	splitLine = staticmethod( splitLine )
 
 class Clipboard( object ):
 	def __init__( self, backend=None ):
