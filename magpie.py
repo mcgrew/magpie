@@ -270,6 +270,7 @@ class PasswordDB( object ):
 class Clipboard( object ):
 	def __init__( self, backend=None ):
 		object.__init__( self )
+		self.backend = None
 		if backend:
 			self.backend = backend
 		else:
@@ -280,7 +281,9 @@ class Clipboard( object ):
 			elif len( subprocess.Popen([ "which", "xclip" ], stdout=subprocess.PIPE, 
 				stderr=subprocess.PIPE ).stdout.read( )):
 				self.backend = 'xclip'
-
+		if not self.backend: 
+			sys.stderr.write( "Unable to properly initialize clipboard - no supported backends exist\n" )
+			
 			# to do: check for Tk, Wx, Win32, etc.
 	
 	def read( self ):
@@ -291,7 +294,6 @@ class Clipboard( object ):
 			return subprocess.Popen([ 'xsel', '-o' ], stdout=subprocess.PIPE,).stdout.read( )
 		if self.backend == 'xclip':
 			return subprocess.Popen([ 'xclip', '-o' ], stdout=subprocess.PIPE,).stdout.read( )
-			
 
 	def write( self, text ):
 		"""
@@ -319,7 +321,7 @@ class Clipboard( object ):
 			proc.stdin.close( )
 			proc.wait( )
 			return
-			
+
 	def clear( self ):
 		"""
 		Clear the clipboard contents
