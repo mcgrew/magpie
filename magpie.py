@@ -25,17 +25,26 @@ from tempfile import mkstemp
 from time import sleep
 import zlib
 import re
+import string
 
 #	To Do: 
 #		add an --edit option
 #		add the ability to --force certain types of characters
-#		add an --append option as an alternative to --import
+#		add an --append option as an alternative to --import (maybe --merge?)
 #		add an --interactive option?
-#		consider the symbols @% for password generation
 #		add a --sub option for substituting characters in the generated password
 
+B64_SYMBOLS = '._'
+SETS = {
+	"alnum": "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
+	"alpha": "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
+	"digit": "0123456789",
+	"lower": "abcdefghijklmnopqrstuvwxyz",
+	"upper": "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+}
+
 def parseOpts( ):
-	parser = OptionParser( version="%prog 0.1-alpha-2009.09.24", usage="%prog [options] [description|keywords]" )
+	parser = OptionParser( version="%prog 0.1-alpha-2009.10.01", usage="%prog [options] [description|keywords]" )
 	parser.add_option( "-a", "--add", dest="username", 
 		help="Add a password to the stored passwords with the specified username" )
 	parser.add_option( "-f", "--file", dest="file", default=os.getenv( 'HOME' )+os.sep+".magpie"+os.sep+"database" , 
@@ -61,6 +70,9 @@ def parseOpts( ):
 	parser.add_option( "--import", dest="importFile",
 		help="Import a password database from a delimited text file. This will overwrite any passwords in your " +
 		"current database. Specify - as the filename to read from stdin" );
+	parser.add_option( "--tr", dest="translate", action="append",
+		help="Takes an argument in the form chars:chars and translates characters in generated passwords, replacing "
+		"characters before the : with the corresponding character after the :" )
 	parser.add_option( "-p", "--print", action="store_true", dest="print_", 
 		help="Print the password to standard output instead of copying it to the clipboard" )
 
@@ -69,11 +81,13 @@ def parseOpts( ):
 
 def main( options, args ):
 	clipboard = Clipboard( )
+
 	if options.generate and not options.username:
+		newPass = translate( PasswordDB.generate( options.generate ), options.translate )
 		if options.print_:
-			sys.stdout.write( PasswordDB.generate( options.generate ))
+			sys.stdout.write( newPass )
 		else:
-			clipboard.write( PasswordDB.generate( options.generate ))
+			clipboard.write( newPass )
 		sys.exit( 0 )
 	# prompt for password
 	password = getpass( "Master Password: " )
@@ -137,7 +151,7 @@ def main( options, args ):
 	# BUG remove and add at the same time isn't working properly.
 	if options.username:
 		if options.generate:
-			newPass = PasswordDB.generate( options.generate )
+			newPass = translate( PasswordDB.generate( options.generate ), options.translate )
 			clipboard.write( newPass )
 		else:
 			newPass       = getpass( "Enter password for new account: " )
@@ -176,6 +190,20 @@ def main( options, args ):
 		clipboard.write( requested )
 
 	pdb.close( )
+
+def translate( st, replacements ):
+	if not replacements:
+		return st
+	for repl in replacements:
+		if '~' in repl:
+			for i in SETS.keys( ):
+				repl = repl.replace( '~%s'%i, SETS[ i ])
+		_from_, to  = repl.split( ':', 1 )
+		if len( _from_ ) > len( to ):
+			to += to[ -1 ] * ( len( _from_ ) - len( to ))
+		st = st.translate( string.maketrans( _from_, to[ :len( _from_ )]))
+	return st
+		
 
 class PasswordDB( object ):
 	def __init__( self, filename, password ):
@@ -259,8 +287,8 @@ class PasswordDB( object ):
 		return AES.new( sha256( self.password ).digest( ), AES.MODE_CFB ).decrypt( text )
 
 	def generate( length ):
-		# get a random string containing base64 encoded data, replacing /+ with  !_
-		return b64encode( os.urandom( length ), "!_" )[ :length ]
+		# get a random string containing base64 encoded data, replacing /+ with B64_SYMBOLS
+		return b64encode( os.urandom( length ), B64_SYMBOLS )[ :length ]
 	generate = staticmethod( generate )
 
 	def splitLine( line ):
