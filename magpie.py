@@ -21,8 +21,7 @@ import sys
 from optparse import OptionParser
 from getpass import getpass
 import subprocess
-from tempfile import mkstemp
-from time import sleep
+#from tempfile import mkstemp
 import zlib
 import re
 import string
@@ -32,7 +31,6 @@ import string
 #		add the ability to --force certain types of characters
 #		add an --append option as an alternative to --import (maybe --merge?)
 #		add an --interactive option?
-#		add a --sub option for substituting characters in the generated password
 
 B64_SYMBOLS = '._'
 SETS = {
@@ -44,7 +42,7 @@ SETS = {
 }
 
 def parseOpts( ):
-	parser = OptionParser( version="%prog 0.1-alpha-2009.10.01", usage="%prog [options] [description|keywords]" )
+	parser = OptionParser( version="%prog 0.1-alpha-2009.10.05", usage="%prog [options] [description|keywords]" )
 	parser.add_option( "-a", "--add", dest="username", 
 		help="Add a password to the stored passwords with the specified username" )
 	parser.add_option( "-f", "--file", dest="file", default=os.getenv( 'HOME' )+os.sep+".magpie"+os.sep+"database" , 
