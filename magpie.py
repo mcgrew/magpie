@@ -70,7 +70,7 @@ def parseOpts( ):
 	parser.add_option( "--import", dest="importFile",
 		help="Import a password database from a delimited text file. This will overwrite any passwords in your " +
 		"current database. Specify - as the filename to read from stdin" );
-	parser.add_option( "--tr", dest="translate", action="append",
+	parser.add_option( "--tr", "--sub", dest="translate", action="append",
 		help="Takes an argument in the form chars:chars and translates characters in generated passwords, replacing "
 		"characters before the : with the corresponding character after the :" )
 	parser.add_option( "-p", "--print", action="store_true", dest="print_", 
