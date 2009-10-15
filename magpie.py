@@ -31,6 +31,8 @@ import string
 #		add the ability to --force certain types of characters
 #		add an --append option as an alternative to --import (maybe --merge?)
 #		add an --interactive option?
+#		confirm password when importing a database
+
 
 B64_SYMBOLS = '._'
 SETS = {
@@ -169,10 +171,10 @@ def main( options, args ):
 		sys.exit( 0 )
 	
 	if options.find:
-		found = pdb.find( args )
+		found = pdb.find( *args )
 		if found:
-			print( pdb.data.split( '\n' )[ 0 ] )
-			print( PasswordDB.mask( ))
+			print( "%20s %8s %s" % PasswordDB.splitLine( pdb.data.split( '\n' )[ 0 ] ))
+			print( "%20s %8s %s" % PasswordDB.splitLine( PasswordDB.mask( found )))
 		else:
 			print "Unable to locate entry"
 
