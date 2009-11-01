@@ -175,8 +175,10 @@ def main( options, args ):
 		if found:
 			print( "%20s %8s %s" % PasswordDB.splitLine( pdb.data.split( '\n' )[ 0 ] ))
 			print( "%20s %8s %s" % PasswordDB.splitLine( PasswordDB.mask( found )))
+			sys.exit( 0 )
 		else:
-			print "Unable to locate entry"
+			print "Unable to locate entry for search terms '%s'" % str.join( ' ', args )
+			sys.exit( 1 )
 
 	entry = pdb.find( *args ).split( '\t', 2 )
 	if options.get_user:
