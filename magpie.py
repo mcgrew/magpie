@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 #	This program is free software: you can redistribute it and/or modify
 #	it under the terms of the GNU General Public License as published by
@@ -98,7 +98,7 @@ def main( options, args ):
 
 	try:
 		pdb = PasswordDB( options.file, password )
-	except ValueError,e:
+	except ValueError as e:
 		sys.stderr.write( str( e ) + '\n' )
 		sys.exit( -1 )
 
@@ -170,6 +170,11 @@ def main( options, args ):
 	if options.remove:
 		sys.exit( 0 )
 	
+	found = pdb.find( *args )
+	if not found:
+		print( "Unable to locate entry" )
+		return;
+
 	if options.find:
 		found = pdb.find( *args )
 		if found:
@@ -180,16 +185,22 @@ def main( options, args ):
 			print "Unable to locate entry for search terms '%s'" % str.join( ' ', args )
 			sys.exit( 1 )
 
-	entry = pdb.find( *args ).split( '\t', 2 )
-	if options.get_user:
-		requested = entry[ 0 ]
 	else:
-		requested = entry[ 1 ]
+		entry = found.split( '\t', 2 )
+		if options.get_user:
+			requested = entry[ 0 ]
+		else:
+			requested = entry[ 1 ]
+	
+		if options.print_:
+			sys.stdout.write( requested )
+		else:
+			clipboard.write( requested )
+			if not options.get_user:
+				print( "" )
+				print( entry[ 2 ])
+				print( "Username: %s" % entry[ 0 ])
 
-	if options.print_:
-		sys.stdout.write( requested )
-	else:
-		clipboard.write( requested )
 
 	pdb.close( )
 
@@ -222,8 +233,8 @@ class PasswordDB( object ):
 		if os.path.exists( self.filename ):
 			os.rename( self.filename, self.filename+'~' )
 		if not os.path.exists( os.path.dirname( self.filename )):
-			os.makedirs( os.path.dirname( self.filename ), 0755 )
-		passFile = open( self.filename, 'w', 0600 )
+			os.makedirs( os.path.dirname( self.filename ), 0o755 )
+		passFile = open( self.filename, 'w', 0o600 )
 		passFile.write( b64encode( self.encode( zlib.compress( self.data[::-1], 9 ))))
 		passFile.close( )
 		
@@ -379,3 +390,4 @@ class Clipboard( object ):
 if __name__ == "__main__":
 	options, args = parseOpts( )
 	main( options, args )
+
