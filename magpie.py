@@ -21,10 +21,23 @@ import sys
 from optparse import OptionParser
 from getpass import getpass
 import subprocess
-#from tempfile import mkstemp
 import zlib
 import re
 import string
+
+# tkinter doesn't retain clipboard data after exit on unix, so we won't use it there.
+# if it has problems in windows, try using the windows api directly:
+# http://stackoverflow.com/questions/579687/how-do-i-copy-a-string-to-the-clipboard-on-windows-using-python
+try:
+	if sys.platform == 'win32': 
+		if sys.version_info.major >= 3:
+			import tkinter
+		else:
+			import Tkinter as tkinter
+	else:
+		tkinter = None
+except ImportError:
+	tkinter = None
 
 #	To Do: 
 #		add an --edit option
@@ -44,10 +57,10 @@ SETS = {
 }
 
 def parseOpts( ):
-	parser = OptionParser( version="%prog 0.1-alpha-2009.10.05", usage="%prog [options] [description|keywords]" )
+	parser = OptionParser( version="%prog 0.1.1", usage="%prog [options] [description|keywords]" )
 	parser.add_option( "-a", "--add", dest="username", 
 		help="Add a password to the stored passwords with the specified username" )
-	parser.add_option( "-f", "--file", dest="file", default=os.getenv( 'HOME' )+os.sep+".magpie"+os.sep+"database" , 
+	parser.add_option( "-f", "--file", dest="file", default=os.path.expanduser('~'+os.sep+".magpie"+os.sep+"database") , 
 		help="Use FILE instead of %default for storing/retrieving passwords" )
 	parser.add_option( "-g", "--generate", dest="generate", default=0, type="int",
 		help="Generate a random password of the specified length instead of prompting for one" )
@@ -80,7 +93,8 @@ def parseOpts( ):
 
 
 def main( options, args ):
-	clipboard = Clipboard( )
+	if not options.print_:
+		clipboard = Clipboard( )
 
 	if options.generate and not options.username:
 		newPass = translate( PasswordDB.generate( options.generate ), options.translate )
@@ -152,7 +166,10 @@ def main( options, args ):
 	if options.username:
 		if options.generate:
 			newPass = translate( PasswordDB.generate( options.generate ), options.translate )
-			clipboard.write( newPass )
+			if options.print_:
+				sys.stdout.write( "Password: "+ newPass )
+			else:
+				clipboard.write( newPass )
 		else:
 			newPass       = getpass( "Enter password for new account: " )
 			newPassVerify = getpass( "Re-enter password: " )
@@ -182,7 +199,7 @@ def main( options, args ):
 			print( "%20s %8s %s" % PasswordDB.splitLine( PasswordDB.mask( found )))
 			sys.exit( 0 )
 		else:
-			print "Unable to locate entry for search terms '%s'" % str.join( ' ', args )
+			print( "Unable to locate entry for search terms '%s'" % str.join( ' ', args ))
 			sys.exit( 1 )
 
 	else:
@@ -309,19 +326,34 @@ class PasswordDB( object ):
 	splitLine = staticmethod( splitLine )
 
 class Clipboard( object ):
+	backend = False
 	def __init__( self, backend=None ):
 		object.__init__( self )
-		self.backend = None
+		try:
+			xsel = bool( subprocess.Popen([ "which", "xsel" ], stdout=subprocess.PIPE,
+			             stderr=subprocess.PIPE ).stdout.read( ))
+		except:
+			xsel = False
+		try:
+			xclip = bool( subprocess.Popen([ "which", "xclip" ], stdout=subprocess.PIPE, 
+			             stderr=subprocess.PIPE ).stdout.read( ))
+		except:
+			xclip = False
+
 		if backend:
 			self.backend = backend
 		else:
-			backends = dict( )
-			if len( subprocess.Popen([ "which", "xsel" ], stdout=subprocess.PIPE,
-				stderr=subprocess.PIPE ).stdout.read( )):
+			if ( tkinter ):
+				self.backend = 'tk'
+			elif xsel:
 				self.backend = 'xsel'
-			elif len( subprocess.Popen([ "which", "xclip" ], stdout=subprocess.PIPE, 
-				stderr=subprocess.PIPE ).stdout.read( )):
+			elif xclip:
 				self.backend = 'xclip'
+
+		if ( self.backend == 'tk' ):
+			self._tk = tkinter.Tk( )
+			self._tk.withdraw( )
+
 		if not self.backend: 
 			sys.stderr.write( "Unable to properly initialize clipboard - no supported backends exist\n" )
 			
@@ -331,6 +363,11 @@ class Clipboard( object ):
 		"""
 		Returns the contents of the clipboard
 		"""
+		if self.backend == 'tk':
+			try:
+				return self._tk.clipboard_get( )
+			except tkinter.TclError:
+				return str( )
 		if self.backend == 'xsel':
 			return subprocess.Popen([ 'xsel', '-o' ], stdout=subprocess.PIPE,).stdout.read( )
 		if self.backend == 'xclip':
@@ -340,6 +377,10 @@ class Clipboard( object ):
 		"""
 		Copies text to the system clipboard
 		"""
+		if self.backend == 'tk':
+			self._tk.clipboard_clear( )
+			self._tk.clipboard_append( text, type='STRING' )
+			return
 		if self.backend == 'xsel':
 			# copy to both XA_PRIMARY and XA_CLIPBOARD
 			proc = subprocess.Popen([ 'xsel', '-p', '-i' ], stdout=subprocess.PIPE, stdin=subprocess.PIPE )
@@ -367,6 +408,8 @@ class Clipboard( object ):
 		"""
 		Clear the clipboard contents
 		"""
+		if self.backend == 'tk':
+			self._tk.clipboard_clear( )
 		if self.backend == 'xsel':
 			subprocess.call([ 'xsel', '-pc' ])
 			subprocess.call([ 'xsel', '-bc' ])
@@ -385,9 +428,9 @@ class Clipboard( object ):
 			return
 
 	def close( self ):
-		pass
+		if self.backend == 'tk':
+			self._tk.destroy( )
 
 if __name__ == "__main__":
-	options, args = parseOpts( )
-	main( options, args )
+	main( *parseOpts( ))
 
