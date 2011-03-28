@@ -66,8 +66,8 @@ def parseOpts( ):
 		help="Generate a random password of the specified length instead of prompting for one" )
 	parser.add_option( "-r", "--remove", action="store_true", dest="remove", 
 		help="Remove specific password(s) from the database" )
-	parser.add_option( "-u", "--user", action="store_true", dest="get_user",
-		help="Retrieve the username instead of the password for the account" ),
+#	parser.add_option( "-u", "--user", action="store_true", dest="get_user",
+#		help="Retrieve the username instead of the password for the account" ),
 	parser.add_option( "--debug", action="store_true", help="Print debugging messages to stderr" )
 	parser.add_option( "--list", action="store_true", dest="print_all", 
 		help="Print entire database to standard output with the passwords masked" )
@@ -204,19 +204,17 @@ def main( options, args ):
 
 	else:
 		entry = found.split( '\t', 2 )
-		if options.get_user:
-			requested = entry[ 0 ]
-		else:
-			requested = entry[ 1 ]
 	
 		if options.print_:
-			sys.stdout.write( requested )
+			sys.stdout.write( entry[ 1 ] )
+			sys.stdout.flush( )
+			sys.stderr.write( "\n\n%s\n" % entry[ 2 ] )
+			sys.stderr.write( "Username: %s\n\n" % entry[ 0 ] )
 		else:
-			clipboard.write( requested )
-			if not options.get_user:
-				print( "" )
-				print( entry[ 2 ])
-				print( "Username: %s" % entry[ 0 ])
+			clipboard.write( entry[ 1 ] )
+			print( "" )
+			print( entry[ 2 ])
+			print( "Username: %s" % entry[ 0 ])
 
 
 	pdb.close( )
