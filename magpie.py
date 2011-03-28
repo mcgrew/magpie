@@ -43,7 +43,10 @@ except ImportError:
 #		add an --edit option
 #		add the ability to --force certain types of characters
 #		add an --append option as an alternative to --import (maybe --merge?)
-#		add an --interactive option?
+#		add an --update option to update a password for an entry
+#		change -u option to be username entry, change -a true/false, ask for 
+#			username if not specified
+#		change to prompt for description if not specified.
 #		confirm password when importing a database
 
 
@@ -57,37 +60,49 @@ SETS = {
 }
 
 def parseOpts( ):
-	parser = OptionParser( version="%prog 0.1.1", usage="%prog [options] [description|keywords]" )
+	parser = OptionParser( version="%prog 0.1.1", 
+		usage="%prog [options] [description|keywords]" )
 	parser.add_option( "-a", "--add", dest="username", 
 		help="Add a password to the stored passwords with the specified username" )
-	parser.add_option( "-f", "--file", dest="file", default=os.path.expanduser('~'+os.sep+".magpie"+os.sep+"database") , 
+	parser.add_option( "-f", "--file", dest="file", 
+		default=os.path.expanduser('~'+os.sep+".magpie"+os.sep+"database") , 
 		help="Use FILE instead of %default for storing/retrieving passwords" )
-	parser.add_option( "-g", "--generate", dest="generate", default=0, type="int",
-		help="Generate a random password of the specified length instead of prompting for one" )
+	parser.add_option( "-g", "--generate", dest="generate", metavar="LENGTH",
+		default=0, type="int",
+		help="Generate a random password of the specified length instead of " + 
+		"prompting for one" )
 	parser.add_option( "-r", "--remove", action="store_true", dest="remove", 
 		help="Remove specific password(s) from the database" )
 #	parser.add_option( "-u", "--user", action="store_true", dest="get_user",
 #		help="Retrieve the username instead of the password for the account" ),
-	parser.add_option( "--debug", action="store_true", help="Print debugging messages to stderr" )
+	parser.add_option( "--debug", action="store_true", 
+		help="Print debugging messages to stderr" )
 	parser.add_option( "--list", action="store_true", dest="print_all", 
 		help="Print entire database to standard output with the passwords masked" )
 	parser.add_option( "--change-password", action="store_true", dest="change",
 		help="Change the master password for the database" )
 	parser.add_option( "--find", action="store_true", dest="find",
-		help="Find an entry in the database and print its value with the password masked" )
+		help="Find an entry in the database and print its value with the " +
+		"password masked" )
 #	parser.add_option( "-e", "--edit", action="store_true", dest="edit",
-#		help="Edit the file in the default system text editor and import the result as the new database" )
-	parser.add_option( "--export", dest="exportFile", 
-		help="Export the password database to a delimited text file. Keep this file secure, as it will contain " +
-		"all of your passwords in plain text. Specify - as the filename to print to stdout." )
-	parser.add_option( "--import", dest="importFile",
-		help="Import a password database from a delimited text file. This will overwrite any passwords in your " +
-		"current database. Specify - as the filename to read from stdin" );
-	parser.add_option( "--tr", "--sub", dest="translate", action="append",
-		help="Takes an argument in the form chars:chars and translates characters in generated passwords, replacing "
-		"characters before the : with the corresponding character after the :" )
+#		help="Edit the file in the default system text editor and import the " +
+#		"result as the new database" )
+	parser.add_option( "-o", "--export", dest="exportFile", metavar="FILE",
+		help="Export the password database to a delimited text file. Keep this " +
+		"file secure, as it will contain all of your passwords in plain text. " +
+		"Specify - as the filename to print to stdout." )
+	parser.add_option( "-i", "--import", dest="importFile", metavar="FILE",
+		help="Import a password database from a delimited text file. This will " +
+		"overwrite any passwords in your current database. Specify - as the " +
+		"filename to read from stdin" )
+	parser.add_option( "--tr", "--sub", dest="translate", metavar="SUBS", 
+		action="append",
+		help="Takes an argument in the form chars:chars and translates " +
+		"characters in generated passwords, replacing characters before the : " + 
+		"with the corresponding character after the :" )
 	parser.add_option( "-p", "--print", action="store_true", dest="print_", 
-		help="Print the password to standard output instead of copying it to the clipboard" )
+		help="Print the password to standard output instead of copying it to the " +
+		"clipboard" )
 
 	return parser.parse_args( )
 
@@ -97,7 +112,8 @@ def main( options, args ):
 		clipboard = Clipboard( )
 
 	if options.generate and not options.username:
-		newPass = translate( PasswordDB.generate( options.generate ), options.translate )
+		newPass = translate( PasswordDB.generate( options.generate ), 
+			options.translate )
 		if options.print_:
 			sys.stdout.write( newPass )
 		else:
@@ -165,7 +181,8 @@ def main( options, args ):
 	# BUG remove and add at the same time isn't working properly.
 	if options.username:
 		if options.generate:
-			newPass = translate( PasswordDB.generate( options.generate ), options.translate )
+			newPass = translate( PasswordDB.generate( options.generate ), 
+				options.translate )
 			if options.print_:
 				sys.stdout.write( "Password: "+ newPass )
 			else:
@@ -199,7 +216,8 @@ def main( options, args ):
 			print( "%20s %8s %s" % PasswordDB.splitLine( PasswordDB.mask( found )))
 			sys.exit( 0 )
 		else:
-			print( "Unable to locate entry for search terms '%s'" % str.join( ' ', args ))
+			print( "Unable to locate entry for search terms '%s'" % 
+				str.join( ' ', args ))
 			sys.exit( 1 )
 
 	else:
@@ -278,7 +296,8 @@ class PasswordDB( object ):
 	def add( self, username, password, description ):
 		if not self.data[ -1 ] == '\n':
 			self.data += '\n'
-		self.data += str.join( '\t', ( username.strip( ), password.strip( ), description.strip( ) ))
+		self.data += str.join( '\t', ( username.strip( ), password.strip( ), 
+			description.strip( ) ))
 	
 	def find( self, *keywords ):
 		lines = self.data.split( '\n' )
@@ -353,7 +372,8 @@ class Clipboard( object ):
 			self._tk.withdraw( )
 
 		if not self.backend: 
-			sys.stderr.write( "Unable to properly initialize clipboard - no supported backends exist\n" )
+			sys.stderr.write( "Unable to properly initialize clipboard - " +
+				"no supported backends exist\n" )
 			
 			# to do: check for Tk, Wx, Win32, etc.
 	
@@ -367,9 +387,11 @@ class Clipboard( object ):
 			except tkinter.TclError:
 				return str( )
 		if self.backend == 'xsel':
-			return subprocess.Popen([ 'xsel', '-o' ], stdout=subprocess.PIPE,).stdout.read( )
+			return subprocess.Popen([ 'xsel', '-o' ], 
+				stdout=subprocess.PIPE,).stdout.read( )
 		if self.backend == 'xclip':
-			return subprocess.Popen([ 'xclip', '-o' ], stdout=subprocess.PIPE,).stdout.read( )
+			return subprocess.Popen([ 'xclip', '-o' ], 
+				stdout=subprocess.PIPE,).stdout.read( )
 
 	def write( self, text ):
 		"""
@@ -381,22 +403,26 @@ class Clipboard( object ):
 			return
 		if self.backend == 'xsel':
 			# copy to both XA_PRIMARY and XA_CLIPBOARD
-			proc = subprocess.Popen([ 'xsel', '-p', '-i' ], stdout=subprocess.PIPE, stdin=subprocess.PIPE )
+			proc = subprocess.Popen([ 'xsel', '-p', '-i' ], 
+				stdout=subprocess.PIPE, stdin=subprocess.PIPE )
 			proc.stdin.write( text )
 			proc.stdin.close( )
 			proc.wait( )
-			proc = subprocess.Popen([ 'xsel', '-b', '-i' ], stdout=subprocess.PIPE, stdin=subprocess.PIPE )
+			proc = subprocess.Popen([ 'xsel', '-b', '-i' ], 
+				stdout=subprocess.PIPE, stdin=subprocess.PIPE )
 			proc.stdin.write( text )
 			proc.stdin.close( )
 			proc.wait( )
 			return
 		if self.backend == 'xclip':
 			# copy to both XA_PRIMARY and XA_CLIPBOARD
-			proc = subprocess.Popen([ 'xclip', '-selection', 'primary', '-i' ], stdout=subprocess.PIPE, stdin=subprocess.PIPE )
+			proc = subprocess.Popen([ 'xclip', '-selection', 'primary', '-i' ],
+				stdout=subprocess.PIPE, stdin=subprocess.PIPE )
 			proc.stdin.write( text )
 			proc.stdin.close( )
 			proc.wait( )
-			proc = subprocess.Popen([ 'xclip', '-selection', 'clipboard', '-i' ], stdout=subprocess.PIPE, stdin=subprocess.PIPE )
+			proc = subprocess.Popen([ 'xclip', '-selection', 'clipboard', '-i' ], 
+				stdout=subprocess.PIPE, stdin=subprocess.PIPE )
 			proc.stdin.write( text )
 			proc.stdin.close( )
 			proc.wait( )
