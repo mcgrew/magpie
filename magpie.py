@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 
 #	This program is free software: you can redistribute it and/or modify
 #	it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@ import string
 # tkinter doesn't retain clipboard data after exit on unix, so we won't use it there.
 # if it has problems in windows, try using the windows api directly:
 # http://stackoverflow.com/questions/579687/how-do-i-copy-a-string-to-the-clipboard-on-windows-using-python
-try:
+try: 
 	if sys.platform == 'win32': 
 		if sys.version_info.major >= 3:
 			import tkinter
@@ -58,6 +58,7 @@ SETS = {
 	"lower": "abcdefghijklmnopqrstuvwxyz",
 	"upper": "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 }
+HASH_ITERATIONS = 4096
 
 def parseOpts( ):
 	parser = OptionParser( version="%prog 0.1.1", 
@@ -95,6 +96,9 @@ def parseOpts( ):
 		help="Import a password database from a delimited text file. This will " +
 		"overwrite any passwords in your current database. Specify - as the " +
 		"filename to read from stdin" )
+	parser.add_option( "-s", "--salt", dest="saltfile", metavar="FILE",
+		default=os.path.expanduser('~'+os.sep+".magpie"+os.sep+"salt") , 
+		help="Use FILE instead of %default for password salt" )
 	parser.add_option( "--tr", "--sub", dest="translate", metavar="SUBS", 
 		action="append",
 		help="Takes an argument in the form chars:chars and translates " +
@@ -127,7 +131,7 @@ def main( options, args ):
 		os.remove( options.file )
 
 	try:
-		pdb = PasswordDB( options.file, password )
+		pdb = PasswordDB( options.file, password, options.saltfile )
 	except ValueError as e:
 		sys.stderr.write( str( e ) + '\n' )
 		sys.exit( -1 )
@@ -250,11 +254,13 @@ def translate( st, replacements ):
 		st = st.translate( string.maketrans( _from_, to[ :len( _from_ )]))
 	return st
 		
-
 class PasswordDB( object ):
-	def __init__( self, filename, password ):
+	def __init__( self, filename, password, saltfile ):
 		self.filename = filename
 		self.password = password
+		self.saltfile = saltfile
+		self.salt = self.getSalt( ) if saltfile and os.path.exists( saltfile ) \
+			else None
 		try:
 			self.open( )
 			if not ( self.data[ :29 ] == "Username\tPassword\tDescription" ):
@@ -328,15 +334,39 @@ class PasswordDB( object ):
 	mask = staticmethod( mask )
 
 	def encode( self, text ):
-		return AES.new( sha256( self.password ).digest( ), AES.MODE_CFB ).encrypt( text )
+		if not self.salt and not os.path.exists( self.saltfile ):
+			self.salt = PasswordDB.generateSalt( 256, self.saltfile );
+		key = sha256( self.password ).digest( ) + self.salt
+		for i in range( HASH_ITERATIONS ):
+			key = sha256( key ).digest( )
+		return AES.new( key, AES.MODE_CFB ).encrypt( text )
 	
 	def decode( self, text ):
-		return AES.new( sha256( self.password ).digest( ), AES.MODE_CFB ).decrypt( text )
+		key = sha256( self.password ).digest( )
+		if ( self.salt ):
+			key = key + self.salt
+			for i in range( HASH_ITERATIONS ):
+				key = sha256( key ).digest( )
+		return AES.new( key, AES.MODE_CFB ).decrypt( text )
 
 	def generate( length ):
 		# get a random string containing base64 encoded data, replacing /+ with B64_SYMBOLS
 		return b64encode( os.urandom( length ), B64_SYMBOLS )[ :length ]
 	generate = staticmethod( generate )
+
+	def generateSalt( length, filename=None ):
+		returnvalue = os.urandom( length )
+		if ( filename ):
+			saltfile = open( filename, 'w' )
+			saltfile.write( returnvalue )
+		return returnvalue
+	generateSalt = staticmethod( generateSalt )
+
+	def getSalt( self ):
+		saltreader = open( self.saltfile )
+		returnvalue = saltreader.read( )
+		saltreader.close( )
+		return returnvalue
 
 	def splitLine( line ):
 		return tuple( re.split( "(\s*\t\s*)+", line, 2 )[::2] )

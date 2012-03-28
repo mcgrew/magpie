@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 
 # Test script for passkeeper
 
@@ -99,9 +99,14 @@ def DBTest( ):
 	print
 	testDB = '/tmp/passwd'
 	testPass = 'bork'
+	testSalt = '1234567890'
+	testSaltFile = '/tmp/magpie_test_salt'
+	saltFile = open( testSaltFile, 'w' )
+	saltFile.write( testSalt )
+	saltFile.close( )
 	if os.path.exists( testDB ):
 		os.remove( testDB )
-	pdb = PasswordDB( testDB, testPass )
+	pdb = PasswordDB( testDB, testPass, testSaltFile )
 	testString = "What a lovely bunch of coconuts!"
 	encodedString = pdb.encode( testString )
 	decodedString = pdb.decode( encodedString )
@@ -145,7 +150,7 @@ def DBTest( ):
 	
 	print
 	pdb.close( )
-	pdb = PasswordDB( testDB, testPass )
+	pdb = PasswordDB( testDB, testPass, testSaltFile )
 	if pdb.dump( ) == testData:
 		print( "Save/Read test passed" )
 	else:
@@ -196,6 +201,8 @@ def DBTest( ):
 		print( "New Data was:" )
 		print( pdb.dump( ))
 		returnValue = False
+
+	os.remove( testSaltFile )
 
 	return returnValue
 	
