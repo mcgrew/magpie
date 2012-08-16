@@ -25,19 +25,18 @@ import zlib
 import re
 import string
 
-# tkinter doesn't retain clipboard data after exit on unix, so we won't use it there.
+# Tkinter doesn't retain clipboard data after exit on unix, so we won't use it there.
 # if it has problems in windows, try using the windows api directly:
 # http://stackoverflow.com/questions/579687/how-do-i-copy-a-string-to-the-clipboard-on-windows-using-python
+Tkinter = None
 try: 
   if sys.platform == 'win32': 
     if sys.version_info.major >= 3:
-      import tkinter
+      import tkinter as Tkinter
     else:
-      import Tkinter as tkinter
-  else:
-    tkinter = None
+      import Tkinter
 except ImportError:
-  tkinter = None
+  pass
 
 #  To Do: 
 #    add an --edit option
@@ -387,10 +386,11 @@ class Clipboard( object ):
     except:
       xclip = False
 
+    global Tkinter
     if backend:
       self.backend = backend
     else:
-      if ( tkinter ):
+      if ( Tkinter ):
         self.backend = 'tk'
       elif xsel:
         self.backend = 'xsel'
@@ -398,7 +398,9 @@ class Clipboard( object ):
         self.backend = 'xclip'
 
     if ( self.backend == 'tk' ):
-      self._tk = tkinter.Tk( )
+      if not Tkinter:
+        import Tkinter
+      self._tk = Tkinter.Tk( )
       self._tk.withdraw( )
 
     if not self.backend: 
@@ -414,7 +416,7 @@ class Clipboard( object ):
     if self.backend == 'tk':
       try:
         return self._tk.clipboard_get( )
-      except tkinter.TclError:
+      except Tkinter.TclError:
         return str( )
     if self.backend == 'xsel':
       return subprocess.Popen([ 'xsel', '-o' ], 

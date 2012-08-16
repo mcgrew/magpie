@@ -18,6 +18,7 @@
 from magpie import *
 from base64 import b64encode
 from random import randint
+import unittest
 import os
 
 
@@ -47,165 +48,110 @@ def testGenerator( testLen=512 ):
   return returnvalue
 
 
-def cbTest( ):
-  # Test the Clipboard class
-  cbTypes = ( 'tk', 'xsel', 'xclip' )
-  cbPassed = False
-  for cbType in cbTypes:
-    print
-    try:
-      testCB = Clipboard( cbType )
-      testString = 'I want a shrubbery!' 
-      print( "Test string = " + testString )
-      testCB.write( testString )
-      testCB.close( )
-      testCB = Clipboard( cbType )
-      if testCB.read( ) == testString:
-        print( "Clipboard('%s') copy test passed" % cbType )
-        passed = True 
-      else:
-        print( "Clipboard('%s') copy test failed" % cbType )
-        passed = False
-      testCB.close( )
-      testCB = Clipboard( cbType )
-      testCB.clear( )
-      if len( testCB.read( )):
-        print( "Clipboard('%s') clearing test failed" % cbType )
-        passed = False
-      else:
-        print( "Clipboard('%s') clearing test passed" % cbType )
-        passed = True and passed
-  
-    except Exception as e:
-      passed = False
-      print( "Clipboard('%s') tests raised an Exception:" % cbType )
-      print( str( e ))
+class CBTest( unittest.TestCase ):
+  def setUp( self ):
+    # Test the Clipboard class
+    self.testString = 'I want a shrubbery!' 
 
-    cbPassed = passed or cbPassed
+  def test_xsel( self ):
+    cbType = 'xsel'
+    testCB = Clipboard( cbType )
+    testCB.write( self.testString )
+    testCB.close( )
+    testCB = Clipboard( cbType )
+    self.assertEqual(  testCB.read( ), self.testString )
+    testCB.close( )
+    testCB = Clipboard( cbType )
+    testCB.clear( )
+    self.assertFalse( len( testCB.read( )))
+
+  def test_xclip( self ):
+    cbType = 'xclip'
+    testCB = Clipboard( cbType )
+    testCB.write( self.testString )
+    testCB.close( )
+    testCB = Clipboard( cbType )
+    self.assertEqual(  testCB.read( ), self.testString )
+    testCB.close( )
+    testCB = Clipboard( cbType )
+    testCB.clear( )
+    self.assertFalse( len( testCB.read( )))
+
+  def test_tk( self ):
+    cbType = 'tk'
+    testCB = Clipboard( cbType )
+    testCB.write( self.testString )
+    testCB.close( )
+    testCB = Clipboard( cbType )
+    self.assertEqual(  testCB.read( ), self.testString )
+    testCB.close( )
+    testCB = Clipboard( cbType )
+    testCB.clear( )
+    self.assertFalse( len( testCB.read( )))
+
+
+class DBTest( unittest.TestCase ):
+  def setUp( self ):
+    self.testDB = '/tmp/passwd'
+    self.testPass = 'bork'
+    self.testSalt = '1234567890'
+    self.testSaltFile = '/tmp/magpie_test_salt'
+    saltFile = open( self.testSaltFile, 'w' )
+    saltFile.write( self.testSalt )
+    saltFile.close( )
+    if os.path.exists( self.testDB ):
+      os.remove( self.testDB )
+    self.pdb = PasswordDB( self.testDB, self.testPass, self.testSaltFile )
+    self.testString = "What a lovely bunch of coconuts!"
+    self.inputData = "Username\t  Password\t\tDescription\n" + \
+          "user1\tbork_bork\t www.bork.com is borked\n" + \
+          "user2\t\t \tblah_blah\twww.blah.com\tlogin\n" + \
+          "user3  \twoof_woof \tThe biggest of the big dogs" 
+    self.testData = "Username\tPassword\tDescription\n" + \
+          "user1\tbork_bork\twww.bork.com is borked\n" + \
+          "user2\tblah_blah\twww.blah.com\tlogin\n" + \
+          "user3\twoof_woof\tThe biggest of the big dogs" 
+    self.pdb.load( self.inputData )
+
+  def test_encode_decode( self ):
+    encodedString = self.pdb.encode( self.testString )
+    decodedString = self.pdb.decode( encodedString )
+    self.assertEqual( decodedString, self.testString )
+
+  def test_generate( self ):
+    for i in xrange( 128 ):
+      testLen = randint( 1, 1024 )
+      self.assertEqual( testLen, len( PasswordDB.generate( testLen )))
+
+  def test_import_export( self ):
+    self.assertEqual( self.pdb.dump( ), self.testData )
+
+  def test_save_read( self ):
+    self.pdb.close( )
+    self.pdb = PasswordDB( self.testDB, self.testPass, self.testSaltFile )
+    self.assertEqual( self.pdb.dump( ), self.testData )
+
+  def test_find( self ):
+    self.assertEqual( self.pdb.find( "biggest", "dogs" ),  "user3\twoof_woof\tThe biggest of the big dogs" )
     
-  print
-  if cbPassed:
-    print( "Clipboard usability test passed" )
-  else:
-    print( "Clipboard usability test failed" )
-  return cbPassed
+  def test_mask( self ):
+    self.assertEqual( PasswordDB.mask( self.pdb.find( "bork" )), "user1\t(9)\twww.bork.com is borked" )
+    
+  def test_add( self ):
+    self.pdb.add( "user4", "jomo_baru!  ", "\tThe leader of the pack" )
+    self.assertEqual( self.pdb.dump( ), self.testData+"\nuser4\tjomo_baru!\tThe leader of the pack" )
 
-def DBTest( ):
-  returnValue = True
+  def test_remove( self ):
+    self.pdb.add( "user4", "jomo_baru!  ", "\tThe leader of the pack" )
+    removeTest = self.pdb.remove( "leader" )
+    self.assertEqual( removeTest, "user4\tjomo_baru!\tThe leader of the pack" )
+    self.assertEqual( self.pdb.dump( ), self.testData )
 
-  print
-  print( "################# PasswordDB Class tests: #####################" )
-  
-  print
-  testDB = '/tmp/passwd'
-  testPass = 'bork'
-  testSalt = '1234567890'
-  testSaltFile = '/tmp/magpie_test_salt'
-  saltFile = open( testSaltFile, 'w' )
-  saltFile.write( testSalt )
-  saltFile.close( )
-  if os.path.exists( testDB ):
-    os.remove( testDB )
-  pdb = PasswordDB( testDB, testPass, testSaltFile )
-  testString = "What a lovely bunch of coconuts!"
-  encodedString = pdb.encode( testString )
-  decodedString = pdb.decode( encodedString )
+  def tearDown( self ):
+    os.remove( self.testSaltFile )
+    if os.path.exists( self.testDB ):
+      os.remove( self.testDB )
 
-  print( "testString    = " + testString )
-  print( "encodedString = " + b64encode( encodedString ))
-  print( "decodedString = " + decodedString )
-  if ( decodedString == testString ):
-    print( "Encode/Decode test passed" )
-  else:
-    returnValue = false
-    print( "Encode/Decode test failed" )
-  print
-
-  for i in xrange( 32 ):
-    returnValue = testGenerator( randint( 1, 128 )) and returnValue
-
-  print
-  inputData = "Username\t  Password\t\tDescription\n" + \
-        "user1\tbork_bork\t www.bork.com is borked\n" + \
-        "user2\t\t \tblah_blah\twww.blah.com\tlogin\n" + \
-        "user3  \twoof_woof \tThe biggest of the big dogs" 
-  testData = "Username\tPassword\tDescription\n" + \
-        "user1\tbork_bork\twww.bork.com is borked\n" + \
-        "user2\tblah_blah\twww.blah.com\tlogin\n" + \
-        "user3\twoof_woof\tThe biggest of the big dogs" 
-  testData = testData.strip( )
-  pdb.load( inputData )
-
-  print( "Test data:" )
-  print( inputData )
-
-  print
-  if pdb.dump( ) == testData:
-    print( "Import/Export test passed" )
-  else:
-    print( "Import/Export test failed" )
-    print( "New Data was:" )
-    print( pdb.dump( ))
-    returnValue = False
-  
-  print
-  pdb.close( )
-  pdb = PasswordDB( testDB, testPass, testSaltFile )
-  if pdb.dump( ) == testData:
-    print( "Save/Read test passed" )
-  else:
-    print( "Save/Read test failed" )
-    print( "New Data was:" )
-    print( pdb.dump( ))
-    returnValue = False
-
-  print
-  if pdb.find( "biggest", "dogs" ) ==  "user3\twoof_woof\tThe biggest of the big dogs":
-    print( "Find test passed" )
-  else:
-    print( "Find test failed looking for ('biggest', 'dogs')" )
-    print( "Find returned: " + pdb.find( "biggest", "dogs" ))
-    print( "Instead of   : user3\twoof_woof\tThe biggest of the big dogs" )
-    returnValue = False
-  
-  print
-  if PasswordDB.mask( pdb.find( "bork" )) == "user1\t(9)\twww.bork.com is borked":
-    print( "Mask Test passed" )
-  else:
-    print( "Mask Test failed" )
-    print( "Mask returned: "+PasswordDB.mask( pdb.find( "bork" )))
-    print( "Instead of   : user1\t*********\twww.bork.com is borked" )
-    returnValue = False
-  
-  print
-  pdb.add( "user4", "jomo_baru!  ", "\tThe leader of the pack" )
-  if pdb.dump( ) == testData+"\nuser4\tjomo_baru!\tThe leader of the pack":
-    print( "Add test passed" )
-    print( "New Data was:" )
-    print( pdb.dump( ))
-  else:
-    print( "Add test failed" )
-    print( "New Data was:" )
-    print( pdb.dump( ))
-    returnValue = False
-
-  print
-  removeTest = pdb.remove( "leader" )
-  if removeTest == "user4\tjomo_baru!\tThe leader of the pack" and pdb.dump( ) == testData:
-    print( "Remove test passed" )
-    print( "New Data was:" )
-    print( pdb.dump( ))
-  else:
-    print( "Remove test failed looking for 'leader'" )
-    print( "Remove returned: "+removeTest )
-    print( "New Data was:" )
-    print( pdb.dump( ))
-    returnValue = False
-
-  os.remove( testSaltFile )
-
-  return returnValue
-  
 if __name__ == "__main__":
-    main( )
+    unittest.main( )
 
