@@ -338,7 +338,7 @@ class PasswordDB( object ):
     key = sha256( self.password ).digest( ) + self.salt
     for i in range( HASH_ITERATIONS ):
       key = sha256( key ).digest( )
-    return AES.new( key, AES.MODE_CFB ).encrypt( text )
+    return AES.new( key, AES.MODE_CFB, key[:16] ).encrypt( text )
   
   def decode( self, text ):
     key = sha256( self.password ).digest( )
@@ -346,7 +346,7 @@ class PasswordDB( object ):
       key = key + self.salt
       for i in range( HASH_ITERATIONS ):
         key = sha256( key ).digest( )
-    return AES.new( key, AES.MODE_CFB ).decrypt( text )
+    return AES.new( key, AES.MODE_CFB, key[:16] ).decrypt( text )
 
   def generate( length ):
     # get a random string containing base64 encoded data, replacing /+ with B64_SYMBOLS

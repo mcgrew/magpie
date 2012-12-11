@@ -47,7 +47,6 @@ def testGenerator( testLen=512 ):
   print( "Generated password of length %4d (%s) - %s" % ( testLen, success, testGen ))
   return returnvalue
 
-
 class CBTest( unittest.TestCase ):
   def setUp( self ):
     # Test the Clipboard class
@@ -89,6 +88,16 @@ class CBTest( unittest.TestCase ):
     testCB.clear( )
     self.assertFalse( len( testCB.read( )))
 
+class StaticMethodTest( unittest.TestCase ):
+  def test_generate( self ):
+    for i in xrange( 128 ):
+      testLen = randint( 1, 1024 )
+      self.assertEqual( testLen, len( PasswordDB.generate( testLen )))
+
+  def test_mask( self ):
+    self.assertEqual( 
+      PasswordDB.mask( "user1\tbork_bork\twww.bork.com is borked" ), 
+      "user1\t(9)\twww.bork.com is borked" )
 
 class DBTest( unittest.TestCase ):
   def setUp( self ):
@@ -117,11 +126,10 @@ class DBTest( unittest.TestCase ):
     encodedString = self.pdb.encode( self.testString )
     decodedString = self.pdb.decode( encodedString )
     self.assertEqual( decodedString, self.testString )
-
-  def test_generate( self ):
-    for i in xrange( 128 ):
-      testLen = randint( 1, 1024 )
-      self.assertEqual( testLen, len( PasswordDB.generate( testLen )))
+    # make sure it doesn't work with a bad password
+    bad_pdb = PasswordDB( self.testDB, "bad_password", self.testSaltFile )
+    bad_decodedString = bad_pdb.decode( encodedString )
+    self.assertNotEqual( bad_decodedString, self.testString )
 
   def test_import_export( self ):
     self.assertEqual( self.pdb.dump( ), self.testData )
@@ -133,9 +141,6 @@ class DBTest( unittest.TestCase ):
 
   def test_find( self ):
     self.assertEqual( self.pdb.find( "biggest", "dogs" ),  "user3\twoof_woof\tThe biggest of the big dogs" )
-    
-  def test_mask( self ):
-    self.assertEqual( PasswordDB.mask( self.pdb.find( "bork" )), "user1\t(9)\twww.bork.com is borked" )
     
   def test_add( self ):
     self.pdb.add( "user4", "jomo_baru!  ", "\tThe leader of the pack" )
