@@ -60,7 +60,7 @@ SETS = {
 HASH_ITERATIONS = 4096
 
 def parseOpts( ):
-  parser = OptionParser( version="%prog 0.1.1", 
+  parser = OptionParser( version="%prog 0.2", 
     usage="%prog [options] [description|keywords]" )
   parser.add_option( "-a", "--add", dest="username", 
     help="Add a password to the stored passwords with the specified username" )
