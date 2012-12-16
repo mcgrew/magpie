@@ -88,6 +88,19 @@ class CBTest( unittest.TestCase ):
     testCB.clear( )
     self.assertFalse( len( testCB.read( )))
 
+  def test_pbcopy( self ):
+    cbType = 'pbcopy'
+    testCB = Clipboard( cbType )
+    testCB.write( self.testString )
+    testCB.close( )
+    testCB = Clipboard( cbType )
+    self.assertEqual(  testCB.read( ), self.testString )
+    testCB.close( )
+    testCB = Clipboard( cbType )
+    testCB.clear( )
+    self.assertFalse( len( testCB.read( )))
+
+
 class StaticMethodTest( unittest.TestCase ):
   def test_generate( self ):
     for i in xrange( 128 ):

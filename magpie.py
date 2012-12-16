@@ -25,8 +25,8 @@ import zlib
 import re
 import string
 
-# Tkinter doesn't retain clipboard data after exit on unix, so we won't use it there.
-# if it has problems in windows, try using the windows api directly:
+# Tkinter doesn't retain clipboard data after exit on unix, so we won't use it 
+# there. If it has problems in windows, try using the windows api directly:
 # http://stackoverflow.com/questions/579687/how-do-i-copy-a-string-to-the-clipboard-on-windows-using-python
 Tkinter = None
 try: 
@@ -63,30 +63,30 @@ def parseOpts( ):
   parser = OptionParser( version="%prog 0.2", 
     usage="%prog [options] [description|keywords]" )
   parser.add_option( "-a", "--add", dest="username", 
-    help="Add a password to the stored passwords with the specified username" )
+    help="Add a password to the stored passwords with the specified username." )
   parser.add_option( "-f", "--file", dest="file", 
     default=os.path.expanduser('~'+os.sep+".magpie"+os.sep+"database") , 
-    help="Use FILE instead of %default for storing/retrieving passwords" )
+    help="Use FILE instead of %default for storing/retrieving passwords." )
   parser.add_option( "-g", "--generate", dest="generate", metavar="LENGTH",
     default=0, type="int",
     help="Generate a random password of the specified length instead of " + 
-    "prompting for one" )
+    "prompting for one." )
   parser.add_option( "-r", "--remove", action="store_true", dest="remove", 
-    help="Remove specific password(s) from the database" )
+    help="Remove specific password(s) from the database." )
 #  parser.add_option( "-u", "--user", action="store_true", dest="get_user",
-#    help="Retrieve the username instead of the password for the account" ),
+#    help="Retrieve the username instead of the password for the account." ),
   parser.add_option( "--debug", action="store_true", 
-    help="Print debugging messages to stderr" )
+    help="Print debugging messages to stderr." )
   parser.add_option( "--list", action="store_true", dest="print_all", 
-    help="Print entire database to standard output with the passwords masked" )
+    help="Print entire database to standard output with the passwords masked." )
   parser.add_option( "--change-password", action="store_true", dest="change",
-    help="Change the master password for the database" )
+    help="Change the master password for the database." )
   parser.add_option( "--find", action="store_true", dest="find",
     help="Find an entry in the database and print its value with the " +
-    "password masked" )
+    "password masked." )
 #  parser.add_option( "-e", "--edit", action="store_true", dest="edit",
 #    help="Edit the file in the default system text editor and import the " +
-#    "result as the new database" )
+#    "result as the new database." )
   parser.add_option( "-o", "--export", dest="exportFile", metavar="FILE",
     help="Export the password database to a delimited text file. Keep this " +
     "file secure, as it will contain all of your passwords in plain text. " +
@@ -94,18 +94,18 @@ def parseOpts( ):
   parser.add_option( "-i", "--import", dest="importFile", metavar="FILE",
     help="Import a password database from a delimited text file. This will " +
     "overwrite any passwords in your current database. Specify - as the " +
-    "filename to read from stdin" )
+    "filename to read from stdin." )
   parser.add_option( "-s", "--salt", dest="saltfile", metavar="FILE",
     default=os.path.expanduser('~'+os.sep+".magpie"+os.sep+"salt") , 
-    help="Use FILE instead of %default for password salt" )
+    help="Use FILE instead of %default for password salt." )
   parser.add_option( "--tr", "--sub", dest="translate", metavar="SUBS", 
     action="append",
     help="Takes an argument in the form chars:chars and translates " +
     "characters in generated passwords, replacing characters before the : " + 
-    "with the corresponding character after the :" )
+    "with the corresponding character after the :." )
   parser.add_option( "-p", "--print", action="store_true", dest="print_", 
     help="Print the password to standard output instead of copying it to the " +
-    "clipboard" )
+    "clipboard." )
 
   return parser.parse_args( )
 
@@ -376,12 +376,21 @@ class Clipboard( object ):
   def __init__( self, backend=None ):
     object.__init__( self )
     try:
-      xsel = bool( subprocess.Popen([ "which", "xsel" ], stdout=subprocess.PIPE,
+      pbcopy = bool( subprocess.Popen([ "which", "pbcopy" ], 
+                     stdout=subprocess.PIPE, 
+                     stderr=subprocess.PIPE ).stdout.read( ))
+    except:
+      pbcopy = False
+
+    try:
+      xsel = bool( subprocess.Popen([ "which", "xsel" ], 
+                   stdout=subprocess.PIPE,
                    stderr=subprocess.PIPE ).stdout.read( ))
     except:
       xsel = False
     try:
-      xclip = bool( subprocess.Popen([ "which", "xclip" ], stdout=subprocess.PIPE, 
+      xclip = bool( subprocess.Popen([ "which", "xclip" ], 
+                   stdout=subprocess.PIPE, 
                    stderr=subprocess.PIPE ).stdout.read( ))
     except:
       xclip = False
@@ -392,6 +401,8 @@ class Clipboard( object ):
     else:
       if ( Tkinter ):
         self.backend = 'tk'
+      elif pbcopy:
+        self.backend = 'pbcopy'
       elif xsel:
         self.backend = 'xsel'
       elif xclip:
@@ -418,6 +429,9 @@ class Clipboard( object ):
         return self._tk.clipboard_get( )
       except Tkinter.TclError:
         return str( )
+    if self.backend == 'pbcopy':
+      return subprocess.Popen([ 'pbpaste', '-Prefer', 'txt' ], 
+        stdout=subprocess.PIPE,).stdout.read( )
     if self.backend == 'xsel':
       return subprocess.Popen([ 'xsel', '-o' ], 
         stdout=subprocess.PIPE,).stdout.read( )
@@ -429,11 +443,17 @@ class Clipboard( object ):
     """
     Copies text to the system clipboard
     """
-    if self.backend == 'tk':
+    if self.backend == 'tk': #Windows
       self._tk.clipboard_clear( )
       self._tk.clipboard_append( text, type='STRING' )
       return
-    if self.backend == 'xsel':
+    if self.backend == 'pbcopy': #OSX
+      proc = subprocess.Popen([ 'pbcopy' ], 
+        stdout=subprocess.PIPE, stdin=subprocess.PIPE )
+      proc.stdin.write( text )
+      proc.stdin.close( )
+      proc.wait( )
+    if self.backend == 'xsel': #Linux
       # copy to both XA_PRIMARY and XA_CLIPBOARD
       proc = subprocess.Popen([ 'xsel', '-p', '-i' ], 
         stdout=subprocess.PIPE, stdin=subprocess.PIPE )
@@ -446,7 +466,7 @@ class Clipboard( object ):
       proc.stdin.close( )
       proc.wait( )
       return
-    if self.backend == 'xclip':
+    if self.backend == 'xclip': #Linux
       # copy to both XA_PRIMARY and XA_CLIPBOARD
       proc = subprocess.Popen([ 'xclip', '-selection', 'primary', '-i' ],
         stdout=subprocess.PIPE, stdin=subprocess.PIPE )
@@ -470,6 +490,12 @@ class Clipboard( object ):
       subprocess.call([ 'xsel', '-pc' ])
       subprocess.call([ 'xsel', '-bc' ])
       return
+    if self.backend == 'pbcopy':
+      proc = subprocess.Popen([ 'pbcopy' ], stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE, stdin=subprocess.PIPE )
+      proc.stdin.write( '' )
+      proc.stdin.close( )
+      proc.wait( )
     if self.backend == 'xclip':
       proc = subprocess.Popen([ 'xclip', '-i', '-selection', 'primary' ], stdout=subprocess.PIPE,
         stderr=subprocess.PIPE, stdin=subprocess.PIPE )
