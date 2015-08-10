@@ -18,6 +18,7 @@ from hashlib import sha256
 from base64 import b64encode,b64decode
 import os 
 import sys
+import shutil
 from optparse import OptionParser
 from getpass import getpass
 import subprocess
@@ -269,7 +270,7 @@ class PasswordDB( object ):
       
   def flush( self ):
     if os.path.exists( self.filename ):
-      os.rename( self.filename, self.filename+'~' )
+      shutil.copyfile( self.filename, self.filename+'~' )
     if not os.path.exists( os.path.dirname( self.filename )):
       os.makedirs( os.path.dirname( self.filename ), 0o755 )
     passFile = open( self.filename, 'w', 0o600 )
