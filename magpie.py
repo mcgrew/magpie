@@ -60,339 +60,339 @@ SETS = {
 }
 HASH_ITERATIONS = 4096
 
-def parseOpts( ):
-  parser = OptionParser( version="%prog 0.2", 
-    usage="%prog [options] [description|keywords]" )
-  parser.add_option( "-a", "--add", dest="username", 
-    help="Add a password to the stored passwords with the specified username." )
-  parser.add_option( "-f", "--file", dest="file", 
+def parseOpts():
+  parser = OptionParser(version="%prog 0.2", 
+    usage="%prog [options] [description|keywords]")
+  parser.add_option("-a", "--add", dest="username", 
+    help="Add a password to the stored passwords with the specified username.")
+  parser.add_option("-f", "--file", dest="file", 
     default=os.path.expanduser('~'+os.sep+".magpie"+os.sep+"database") , 
-    help="Use FILE instead of %default for storing/retrieving passwords." )
-  parser.add_option( "-g", "--generate", dest="generate", metavar="LENGTH",
+    help="Use FILE instead of %default for storing/retrieving passwords.")
+  parser.add_option("-g", "--generate", dest="generate", metavar="LENGTH",
     default=0, type="int",
     help="Generate a random password of the specified length instead of " + 
-    "prompting for one." )
-  parser.add_option( "-r", "--remove", action="store_true", dest="remove", 
-    help="Remove specific password(s) from the database." )
-#  parser.add_option( "-u", "--user", action="store_true", dest="get_user",
-#    help="Retrieve the username instead of the password for the account." ),
-  parser.add_option( "--debug", action="store_true", 
-    help="Print debugging messages to stderr." )
-  parser.add_option( "--list", action="store_true", dest="print_all", 
-    help="Print entire database to standard output with the passwords masked." )
-  parser.add_option( "--change-password", action="store_true", dest="change",
-    help="Change the master password for the database." )
-  parser.add_option( "--find", action="store_true", dest="find",
+    "prompting for one.")
+  parser.add_option("-r", "--remove", action="store_true", dest="remove", 
+    help="Remove specific password(s) from the database.")
+#  parser.add_option("-u", "--user", action="store_true", dest="get_user",
+#    help="Retrieve the username instead of the password for the account."),
+  parser.add_option("--debug", action="store_true", 
+    help="Print debugging messages to stderr.")
+  parser.add_option("--list", action="store_true", dest="print_all", 
+    help="Print entire database to standard output with the passwords masked.")
+  parser.add_option("--change-password", action="store_true", dest="change",
+    help="Change the master password for the database.")
+  parser.add_option("--find", action="store_true", dest="find",
     help="Find an entry in the database and print its value with the " +
-    "password masked." )
-#  parser.add_option( "-e", "--edit", action="store_true", dest="edit",
+    "password masked.")
+#  parser.add_option("-e", "--edit", action="store_true", dest="edit",
 #    help="Edit the file in the default system text editor and import the " +
-#    "result as the new database." )
-  parser.add_option( "-o", "--export", dest="exportFile", metavar="FILE",
+#    "result as the new database.")
+  parser.add_option("-o", "--export", dest="exportFile", metavar="FILE",
     help="Export the password database to a delimited text file. Keep this " +
     "file secure, as it will contain all of your passwords in plain text. " +
-    "Specify - as the filename to print to stdout." )
-  parser.add_option( "-i", "--import", dest="importFile", metavar="FILE",
+    "Specify - as the filename to print to stdout.")
+  parser.add_option("-i", "--import", dest="importFile", metavar="FILE",
     help="Import a password database from a delimited text file. This will " +
     "overwrite any passwords in your current database. Specify - as the " +
-    "filename to read from stdin." )
-  parser.add_option( "-s", "--salt", dest="saltfile", metavar="FILE",
+    "filename to read from stdin.")
+  parser.add_option("-s", "--salt", dest="saltfile", metavar="FILE",
     default=os.path.expanduser('~'+os.sep+".magpie"+os.sep+"salt") , 
-    help="Use FILE instead of %default for password salt." )
-  parser.add_option( "--tr", "--sub", dest="translate", metavar="SUBS", 
+    help="Use FILE instead of %default for password salt.")
+  parser.add_option("--tr", "--sub", dest="translate", metavar="SUBS", 
     action="append",
     help="Takes an argument in the form chars:chars and translates " +
     "characters in generated passwords, replacing characters before the : " + 
-    "with the corresponding character after the :." )
-  parser.add_option( "-p", "--print", action="store_true", dest="print_", 
+    "with the corresponding character after the :.")
+  parser.add_option("-p", "--print", action="store_true", dest="print_", 
     help="Print the password to standard output instead of copying it to the " +
-    "clipboard." )
+    "clipboard.")
 
-  return parser.parse_args( )
+  return parser.parse_args()
 
 
-def main( options, args ):
+def main(options, args):
   if not options.print_:
-    clipboard = Clipboard( )
+    clipboard = Clipboard()
 
   if options.generate and not options.username:
-    newPass = translate( PasswordDB.generate( options.generate ), 
-      options.translate )
+    newPass = translate(PasswordDB.generate(options.generate), 
+      options.translate)
     if options.print_:
-      sys.stdout.write( newPass )
+      sys.stdout.write(newPass)
     else:
-      clipboard.write( newPass )
-    sys.exit( 0 )
+      clipboard.write(newPass)
+    sys.exit(0)
   # prompt for password
-  password = getpass( "Master Password: " )
+  password = getpass("Master Password: ")
 
   #Remove the old file if it exist and we are importing new data.
-  if options.importFile and os.path.exists( options.file ):
-    os.remove( options.file )
+  if options.importFile and os.path.exists(options.file):
+    os.remove(options.file)
 
   try:
-    pdb = PasswordDB( options.file, password, options.saltfile )
+    pdb = PasswordDB(options.file, password, options.saltfile)
   except ValueError as e:
-    sys.stderr.write( str( e ) + '\n' )
-    sys.exit( -1 )
+    sys.stderr.write(str(e) + '\n')
+    sys.exit(-1)
 
   if options.change:
-    newPass       = getpass( "Enter new master password: " )
-    newPassVerify = getpass( "Re-enter password: " )
-    while not( newPass == newPassVerify ):
-      print( "\nPasswords do not match. please try again" )
-      newPass       = getpass( "Enter new master password: " )
-      newPassVerify = getpass( "Re-enter password: " )
+    newPass       = getpass("Enter new master password: ")
+    newPassVerify = getpass("Re-enter password: ")
+    while not(newPass == newPassVerify):
+      print("\nPasswords do not match. please try again")
+      newPass       = getpass("Enter new master password: ")
+      newPassVerify = getpass("Re-enter password: ")
     pdb.password = newPass
-    print( "Master Password Changed" )
-    pdb.flush( )
-    sys.exit( 0 )
+    print("Master Password Changed")
+    pdb.flush()
+    sys.exit(0)
 
   if options.print_all:
-    lines = pdb.dump( ).split( '\n' )
-    print( "%20s %8s %s" % PasswordDB.splitLine( lines[ 0 ] ))
-    for line in lines[ 1: ]:
-      print( "%20s %8s %s" % PasswordDB.splitLine( PasswordDB.mask( line )))
-    sys.exit( 0 )
+    lines = pdb.dump().split('\n')
+    print("%20s %8s %s" % PasswordDB.splitLine(lines[0]))
+    for line in lines[1:]:
+      print("%20s %8s %s" % PasswordDB.splitLine(PasswordDB.mask(line)))
+    sys.exit(0)
 
   if options.exportFile:
     if options.exportFile == '-':
-      sys.stdout.write( pdb.dump( ) )
+      sys.stdout.write(pdb.dump())
     else:
-      exportFile = open( options.exportFile, 'w' )
-      exportFile.write( pdb.dump( ))
-      exportFile.close( )
-    sys.exit( 0 )
+      exportFile = open(options.exportFile, 'w')
+      exportFile.write(pdb.dump())
+      exportFile.close()
+    sys.exit(0)
 
   if options.importFile:
     if options.importFile == '-':
-      pdb.load( sys.stdin.read( ))
+      pdb.load(sys.stdin.read())
     else:
-      importFile = open( options.importFile )
-      pdb.load( importFile.read( ))
-      importFile.close( )
-    pdb.flush( )
-    sys.exit( 0 )
+      importFile = open(options.importFile)
+      pdb.load(importFile.read())
+      importFile.close()
+    pdb.flush()
+    sys.exit(0)
 
   if options.remove:
-    removed = pdb.remove( *args )
+    removed = pdb.remove(*args)
     if removed:
-      sys.stderr.write( "Removed the following entry:\n%s\n" % removed)
+      sys.stderr.write("Removed the following entry:\n%s\n" % removed)
     else:
-      sys.stderr.write( "Unable to locate the specified entry\n" )
-    pdb.flush( )
+      sys.stderr.write("Unable to locate the specified entry\n")
+    pdb.flush()
 
   # BUG remove and add at the same time isn't working properly.
   if options.username:
     if options.generate:
-      newPass = translate( PasswordDB.generate( options.generate ), 
-        options.translate )
+      newPass = translate(PasswordDB.generate(options.generate), 
+        options.translate)
       if options.print_:
-        sys.stdout.write( "Password: "+ newPass )
+        sys.stdout.write("Password: "+ newPass)
       else:
-        clipboard.write( newPass )
+        clipboard.write(newPass)
     else:
-      newPass       = getpass( "Enter password for new account: " )
-      newPassVerify = getpass( "Re-enter password: " )
-      while not( newPass == newPassVerify ):
-        print( "\nPasswords do not match. please try again" )
-        newPass       = getpass( "Enter password for new account: " )
-        newPassVerify = getpass( "Re-enter password: " )
-    pdb.add( options.username, newPass, str.join( ' ', args ))
+      newPass       = getpass("Enter password for new account: ")
+      newPassVerify = getpass("Re-enter password: ")
+      while not(newPass == newPassVerify):
+        print("\nPasswords do not match. please try again")
+        newPass       = getpass("Enter password for new account: ")
+        newPassVerify = getpass("Re-enter password: ")
+    pdb.add(options.username, newPass, str.join(' ', args))
     if options.generate:
-      sys.stderr.write( "Generated password saved\n" )
-    pdb.flush( )
+      sys.stderr.write("Generated password saved\n")
+    pdb.flush()
 
   # The exit is here to allow a person to add and remove at the same time.
   # In other words, replace an entry.
   if options.remove:
-    sys.exit( 0 )
+    sys.exit(0)
   
-  found = pdb.find( *args )
+  found = pdb.find(*args)
   if not found:
-    print( "Unable to locate entry" )
+    print("Unable to locate entry")
     return;
 
   if options.find:
-    found = pdb.find( *args )
+    found = pdb.find(*args)
     if found:
-      print( "%20s %8s %s" % PasswordDB.splitLine( pdb.data.split( '\n' )[ 0 ] ))
-      print( "%20s %8s %s" % PasswordDB.splitLine( PasswordDB.mask( found )))
-      sys.exit( 0 )
+      print("%20s %8s %s" % PasswordDB.splitLine(pdb.data.split('\n')[0]))
+      print("%20s %8s %s" % PasswordDB.splitLine(PasswordDB.mask(found)))
+      sys.exit(0)
     else:
-      print( "Unable to locate entry for search terms '%s'" % 
-        str.join( ' ', args ))
-      sys.exit( 1 )
+      print("Unable to locate entry for search terms '%s'" % 
+        str.join(' ', args))
+      sys.exit(1)
 
   else:
-    entry = found.split( '\t', 2 )
+    entry = found.split('\t', 2)
   
     if options.print_:
-      sys.stdout.write( entry[ 1 ] )
-      sys.stdout.flush( )
-      sys.stderr.write( "\n\n%s\n" % entry[ 2 ] )
-      sys.stderr.write( "Username: %s\n\n" % entry[ 0 ] )
+      sys.stdout.write(entry[1])
+      sys.stdout.flush()
+      sys.stderr.write("\n\n%s\n" % entry[2])
+      sys.stderr.write("Username: %s\n\n" % entry[0])
     else:
-      clipboard.write( entry[ 1 ] )
-      print( "" )
-      print( entry[ 2 ])
-      print( "Username: %s" % entry[ 0 ])
+      clipboard.write(entry[1])
+      print("")
+      print(entry[2])
+      print("Username: %s" % entry[0])
 
 
-  pdb.close( )
+  pdb.close()
 
-def translate( st, replacements ):
+def translate(st, replacements):
   if not replacements:
     return st
   for repl in replacements:
     if '~' in repl:
-      for i in SETS.keys( ):
-        repl = repl.replace( '~%s'%i, SETS[ i ])
-    _from_, to  = repl.split( ':', 1 )
-    if len( _from_ ) > len( to ):
-      to += to[ -1 ] * ( len( _from_ ) - len( to ))
-    st = st.translate( string.maketrans( _from_, to[ :len( _from_ )]))
+      for i in SETS.keys():
+        repl = repl.replace('~%s'%i, SETS[i])
+    _from_, to  = repl.split(':', 1)
+    if len(_from_) > len(to):
+      to += to[-1] * (len(_from_) - len(to))
+    st = st.translate(string.maketrans(_from_, to[:len(_from_)]))
   return st
     
-class PasswordDB( object ):
-  def __init__( self, filename, password, saltfile ):
+class PasswordDB(object):
+  def __init__(self, filename, password, saltfile):
     self.filename = filename
     self.password = password
     self.saltfile = saltfile
-    self.salt = self.getSalt( ) if saltfile and os.path.exists( saltfile ) \
+    self.salt = self.getSalt() if saltfile and os.path.exists(saltfile) \
       else None
     try:
-      self.open( )
-      if not ( self.data[ :29 ] == "Username\tPassword\tDescription" ):
+      self.open()
+      if not (self.data[:29] == "Username\tPassword\tDescription"):
         raise ValueError
-    except ( zlib.error,ValueError ):
-      raise ValueError( "You entered an incorrect password" )
+    except (zlib.error,ValueError):
+      raise ValueError("You entered an incorrect password")
       
-  def flush( self ):
-    if os.path.exists( self.filename ):
-      shutil.copyfile( self.filename, self.filename+'~' )
-    if not os.path.exists( os.path.dirname( self.filename )):
-      os.makedirs( os.path.dirname( self.filename ), 0o755 )
-    passFile = open( self.filename, 'w', 0o600 )
-    passFile.write( b64encode( self.encode( zlib.compress( self.data[::-1], 9 ))))
-    passFile.close( )
+  def flush(self):
+    if os.path.exists(self.filename):
+      shutil.copyfile(self.filename, self.filename+'~')
+    if not os.path.exists(os.path.dirname(self.filename)):
+      os.makedirs(os.path.dirname(self.filename), 0o755)
+    passFile = open(self.filename, 'w', 0o600)
+    passFile.write(b64encode(self.encode(zlib.compress(self.data[::-1], 9))))
+    passFile.close()
     
-  def close( self ):
-    self.flush( )
+  def close(self):
+    self.flush()
 
-  def open( self ):
-    if not ( os.path.exists( self.filename )):
+  def open(self):
+    if not (os.path.exists(self.filename)):
       self.data = "Username\tPassword\tDescription\n"
       return False
-    passFile = open( self.filename, 'r' )
-    self.data =  zlib.decompress( self.decode( b64decode( passFile.read( ))))[::-1]
-    passFile.close( )
+    passFile = open(self.filename, 'r')
+    self.data =  zlib.decompress(self.decode(b64decode(passFile.read())))[::-1]
+    passFile.close()
     return True
 
-  def dump( self ):
+  def dump(self):
     return self.data
   
-  def load( self, data ):
-    data = data.strip( ).split( "\n" )
+  def load(self, data):
+    data = data.strip().split("\n")
     self.data = ""
     for i in data:
-      self.data += str.join( '\t', PasswordDB.splitLine( i.strip( )) ) + '\n'
-    self.data = self.data.strip( )
+      self.data += str.join('\t', PasswordDB.splitLine(i.strip())) + '\n'
+    self.data = self.data.strip()
 
-  def add( self, username, password, description ):
-    if not self.data[ -1 ] == '\n':
+  def add(self, username, password, description):
+    if not self.data[-1] == '\n':
       self.data += '\n'
-    self.data += str.join( '\t', ( username.strip( ), password.strip( ), 
-      description.strip( ) ))
+    self.data += str.join('\t', (username.strip(), password.strip(), 
+      description.strip()))
   
-  def find( self, *keywords ):
-    lines = self.data.split( '\n' )
-    for i in xrange( 1, len( lines )):
+  def find(self, *keywords):
+    lines = self.data.split('\n')
+    for i in xrange(1, len(lines)):
       correctLine = True
-      for j in xrange( len( keywords )):
-        correctLine = correctLine and ( keywords[ j ].lower( ) in lines[ i ].lower( ) )
+      for j in xrange(len(keywords)):
+        correctLine = correctLine and (keywords[j].lower() in lines[i].lower())
       if correctLine:
-        return lines[ i ]
+        return lines[i]
     return False
   
-  def remove( self, *keywords ):
-    found = self.find( *keywords )
+  def remove(self, *keywords):
+    found = self.find(*keywords)
     if not found:
       return False
-    lines = self.data.split( '\n' )
-    returnvalue =  lines.pop( lines.index( found ) )
-    self.data = str.join( '\n', lines )
+    lines = self.data.split('\n')
+    returnvalue =  lines.pop(lines.index(found))
+    self.data = str.join('\n', lines)
     return returnvalue
 
-  def mask( dbentry ):
-    lines = dbentry.split( '\n' )
-    for i in xrange( len( lines )):
-      newLine = lines[ i ].split( '\t', 2)
-      newLine[ 1 ] = '(%d)' % len( newLine[ 1 ])
-      lines[ i ] = str.join( '\t', newLine )
-    return str.join( '\n', lines )
-  mask = staticmethod( mask )
+  def mask(dbentry):
+    lines = dbentry.split('\n')
+    for i in xrange(len(lines)):
+      newLine = lines[i].split('\t', 2)
+      newLine[1] = '(%d)' % len(newLine[1])
+      lines[i] = str.join('\t', newLine)
+    return str.join('\n', lines)
+  mask = staticmethod(mask)
 
-  def encode( self, text ):
-    if not self.salt and not os.path.exists( self.saltfile ):
-      self.salt = PasswordDB.generateSalt( 256, self.saltfile );
-    key = sha256( self.password ).digest( ) + self.salt
-    for i in range( HASH_ITERATIONS ):
-      key = sha256( key ).digest( )
-    return AES.new( key, AES.MODE_CFB, key[:16] ).encrypt( text )
+  def encode(self, text):
+    if not self.salt and not os.path.exists(self.saltfile):
+      self.salt = PasswordDB.generateSalt(256, self.saltfile);
+    key = sha256(self.password).digest() + self.salt
+    for i in range(HASH_ITERATIONS):
+      key = sha256(key).digest()
+    return AES.new(key, AES.MODE_CFB, key[:16]).encrypt(text)
   
-  def decode( self, text ):
-    key = sha256( self.password ).digest( )
-    if ( self.salt ):
+  def decode(self, text):
+    key = sha256(self.password).digest()
+    if (self.salt):
       key = key + self.salt
-      for i in range( HASH_ITERATIONS ):
-        key = sha256( key ).digest( )
-    return AES.new( key, AES.MODE_CFB, key[:16] ).decrypt( text )
+      for i in range(HASH_ITERATIONS):
+        key = sha256(key).digest()
+    return AES.new(key, AES.MODE_CFB, key[:16]).decrypt(text)
 
-  def generate( length ):
+  def generate(length):
     # get a random string containing base64 encoded data, replacing /+ with B64_SYMBOLS
-    return b64encode( os.urandom( length ), B64_SYMBOLS )[ :length ]
-  generate = staticmethod( generate )
+    return b64encode(os.urandom(length), B64_SYMBOLS)[:length]
+  generate = staticmethod(generate)
 
-  def generateSalt( length, filename=None ):
-    returnvalue = os.urandom( length )
-    if ( filename ):
-      saltfile = open( filename, 'w' )
-      saltfile.write( returnvalue )
+  def generateSalt(length, filename=None):
+    returnvalue = os.urandom(length)
+    if (filename):
+      saltfile = open(filename, 'w')
+      saltfile.write(returnvalue)
     return returnvalue
-  generateSalt = staticmethod( generateSalt )
+  generateSalt = staticmethod(generateSalt)
 
-  def getSalt( self ):
-    saltreader = open( self.saltfile )
-    returnvalue = saltreader.read( )
-    saltreader.close( )
+  def getSalt(self):
+    saltreader = open(self.saltfile)
+    returnvalue = saltreader.read()
+    saltreader.close()
     return returnvalue
 
-  def splitLine( line ):
-    return tuple( re.split( "(\s*\t\s*)+", line, 2 )[::2] )
-  splitLine = staticmethod( splitLine )
+  def splitLine(line):
+    return tuple(re.split("(\s*\t\s*)+", line, 2)[::2])
+  splitLine = staticmethod(splitLine)
 
-class Clipboard( object ):
+class Clipboard(object):
   backend = False
-  def __init__( self, backend=None ):
-    object.__init__( self )
+  def __init__(self, backend=None):
+    object.__init__(self)
     try:
-      pbcopy = bool( subprocess.Popen([ "which", "pbcopy" ], 
+      pbcopy = bool(subprocess.Popen(["which", "pbcopy"], 
                      stdout=subprocess.PIPE, 
-                     stderr=subprocess.PIPE ).stdout.read( ))
+                     stderr=subprocess.PIPE).stdout.read())
     except:
       pbcopy = False
 
     try:
-      xsel = bool( subprocess.Popen([ "which", "xsel" ], 
+      xsel = bool(subprocess.Popen(["which", "xsel"], 
                    stdout=subprocess.PIPE,
-                   stderr=subprocess.PIPE ).stdout.read( ))
+                   stderr=subprocess.PIPE).stdout.read())
     except:
       xsel = False
     try:
-      xclip = bool( subprocess.Popen([ "which", "xclip" ], 
+      xclip = bool(subprocess.Popen(["which", "xclip"], 
                    stdout=subprocess.PIPE, 
-                   stderr=subprocess.PIPE ).stdout.read( ))
+                   stderr=subprocess.PIPE).stdout.read())
     except:
       xclip = False
 
@@ -400,7 +400,7 @@ class Clipboard( object ):
     if backend:
       self.backend = backend
     else:
-      if ( Tkinter ):
+      if (Tkinter):
         self.backend = 'tk'
       elif pbcopy:
         self.backend = 'pbcopy'
@@ -409,111 +409,111 @@ class Clipboard( object ):
       elif xclip:
         self.backend = 'xclip'
 
-    if ( self.backend == 'tk' ):
+    if (self.backend == 'tk'):
       if not Tkinter:
         import Tkinter
-      self._tk = Tkinter.Tk( )
-      self._tk.withdraw( )
+      self._tk = Tkinter.Tk()
+      self._tk.withdraw()
 
     if not self.backend: 
-      sys.stderr.write( "Unable to properly initialize clipboard - " +
-        "no supported backends exist\n" )
+      sys.stderr.write("Unable to properly initialize clipboard - " +
+        "no supported backends exist\n")
       
       # to do: check for Tk, Wx, Win32, etc.
   
-  def read( self ):
+  def read(self):
     """
     Returns the contents of the clipboard
     """
     if self.backend == 'tk':
       try:
-        return self._tk.clipboard_get( )
+        return self._tk.clipboard_get()
       except Tkinter.TclError:
-        return str( )
+        return str()
     if self.backend == 'pbcopy':
-      return subprocess.Popen([ 'pbpaste', '-Prefer', 'txt' ], 
-        stdout=subprocess.PIPE,).stdout.read( )
+      return subprocess.Popen(['pbpaste', '-Prefer', 'txt'], 
+        stdout=subprocess.PIPE,).stdout.read()
     if self.backend == 'xsel':
-      return subprocess.Popen([ 'xsel', '-o' ], 
-        stdout=subprocess.PIPE,).stdout.read( )
+      return subprocess.Popen(['xsel', '-o'], 
+        stdout=subprocess.PIPE,).stdout.read()
     if self.backend == 'xclip':
-      return subprocess.Popen([ 'xclip', '-o' ], 
-        stdout=subprocess.PIPE,).stdout.read( )
+      return subprocess.Popen(['xclip', '-o'], 
+        stdout=subprocess.PIPE,).stdout.read()
 
-  def write( self, text ):
+  def write(self, text):
     """
     Copies text to the system clipboard
     """
     if self.backend == 'tk': #Windows
-      self._tk.clipboard_clear( )
-      self._tk.clipboard_append( text, type='STRING' )
+      self._tk.clipboard_clear()
+      self._tk.clipboard_append(text, type='STRING')
       return
     if self.backend == 'pbcopy': #OSX
-      proc = subprocess.Popen([ 'pbcopy' ], 
-        stdout=subprocess.PIPE, stdin=subprocess.PIPE )
-      proc.stdin.write( text )
-      proc.stdin.close( )
-      proc.wait( )
+      proc = subprocess.Popen(['pbcopy'], 
+        stdout=subprocess.PIPE, stdin=subprocess.PIPE)
+      proc.stdin.write(text)
+      proc.stdin.close()
+      proc.wait()
     if self.backend == 'xsel': #Linux
       # copy to both XA_PRIMARY and XA_CLIPBOARD
-      proc = subprocess.Popen([ 'xsel', '-p', '-i' ], 
-        stdout=subprocess.PIPE, stdin=subprocess.PIPE )
-      proc.stdin.write( text )
-      proc.stdin.close( )
-      proc.wait( )
-      proc = subprocess.Popen([ 'xsel', '-b', '-i' ], 
-        stdout=subprocess.PIPE, stdin=subprocess.PIPE )
-      proc.stdin.write( text )
-      proc.stdin.close( )
-      proc.wait( )
+      proc = subprocess.Popen(['xsel', '-p', '-i'], 
+        stdout=subprocess.PIPE, stdin=subprocess.PIPE)
+      proc.stdin.write(text)
+      proc.stdin.close()
+      proc.wait()
+      proc = subprocess.Popen(['xsel', '-b', '-i'], 
+        stdout=subprocess.PIPE, stdin=subprocess.PIPE)
+      proc.stdin.write(text)
+      proc.stdin.close()
+      proc.wait()
       return
     if self.backend == 'xclip': #Linux
       # copy to both XA_PRIMARY and XA_CLIPBOARD
-      proc = subprocess.Popen([ 'xclip', '-selection', 'primary', '-i' ],
-        stdout=subprocess.PIPE, stdin=subprocess.PIPE )
-      proc.stdin.write( text )
-      proc.stdin.close( )
-      proc.wait( )
-      proc = subprocess.Popen([ 'xclip', '-selection', 'clipboard', '-i' ], 
-        stdout=subprocess.PIPE, stdin=subprocess.PIPE )
-      proc.stdin.write( text )
-      proc.stdin.close( )
-      proc.wait( )
+      proc = subprocess.Popen(['xclip', '-selection', 'primary', '-i'],
+        stdout=subprocess.PIPE, stdin=subprocess.PIPE)
+      proc.stdin.write(text)
+      proc.stdin.close()
+      proc.wait()
+      proc = subprocess.Popen(['xclip', '-selection', 'clipboard', '-i'], 
+        stdout=subprocess.PIPE, stdin=subprocess.PIPE)
+      proc.stdin.write(text)
+      proc.stdin.close()
+      proc.wait()
       return
 
-  def clear( self ):
+  def clear(self):
     """
     Clear the clipboard contents
     """
     if self.backend == 'tk':
-      self._tk.clipboard_clear( )
+      self._tk.clipboard_clear()
     if self.backend == 'xsel':
-      subprocess.call([ 'xsel', '-pc' ])
-      subprocess.call([ 'xsel', '-bc' ])
+      subprocess.call(['xsel', '-pc'])
+      subprocess.call(['xsel', '-bc'])
       return
     if self.backend == 'pbcopy':
-      proc = subprocess.Popen([ 'pbcopy' ], stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE, stdin=subprocess.PIPE )
-      proc.stdin.write( '' )
-      proc.stdin.close( )
-      proc.wait( )
+      proc = subprocess.Popen(['pbcopy'], stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE, stdin=subprocess.PIPE)
+      proc.stdin.write('')
+      proc.stdin.close()
+      proc.wait()
     if self.backend == 'xclip':
-      proc = subprocess.Popen([ 'xclip', '-i', '-selection', 'primary' ], stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE, stdin=subprocess.PIPE )
-      proc.stdin.write( '' )
-      proc.stdin.close( )
-      proc.wait( )
-      proc = subprocess.Popen([ 'xclip', '-i', '-selection', 'clipboard' ], stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE, stdin=subprocess.PIPE )
-      proc.stdin.write( '' )
-      proc.stdin.close( )
-      proc.wait( )
+      proc = subprocess.Popen(['xclip', '-i', '-selection', 'primary'], stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE, stdin=subprocess.PIPE)
+      proc.stdin.write('')
+      proc.stdin.close()
+      proc.wait()
+      proc = subprocess.Popen(['xclip', '-i', '-selection', 'clipboard'], stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE, stdin=subprocess.PIPE)
+      proc.stdin.write('')
+      proc.stdin.close()
+      proc.wait()
       return
 
-  def close( self ):
+  def close(self):
     if self.backend == 'tk':
-      self._tk.destroy( )
+      self._tk.destroy()
 
 if __name__ == "__main__":
-  main( *parseOpts( ))
+  main(*parseOpts())
 

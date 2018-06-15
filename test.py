@@ -22,108 +22,108 @@ import unittest
 import os
 
 
-def main( ):
+def main():
 
-  PASSED = cbTest( ) 
+  PASSED = cbTest() 
 
-  PASSED = DBTest( ) and PASSED  
+  PASSED = DBTest() and PASSED  
 
-  # print( the overall results )
+  # print(the overall results)
   print
   if PASSED:
-    print( "All tests were passed" )
+    print("All tests were passed")
   else:
-    print( "One or more tests did not succeed." )
+    print("One or more tests did not succeed.")
   
 
-def testGenerator( testLen=512 ):
+def testGenerator(testLen=512):
   returnvalue = True
-  testGen = PasswordDB.generate( testLen )
-  if ( len( testGen ) == testLen ):
+  testGen = PasswordDB.generate(testLen)
+  if (len(testGen) == testLen):
     success = "passed"
   else:
     success = "failed"
     returnvalue = false
-  print( "Generated password of length %4d (%s) - %s" % ( testLen, success, testGen ))
+  print("Generated password of length %4d (%s) - %s" % (testLen, success, testGen))
   return returnvalue
 
-class CBTest( unittest.TestCase ):
-  def setUp( self ):
+class CBTest(unittest.TestCase):
+  def setUp(self):
     # Test the Clipboard class
     self.testString = 'I want a shrubbery!' 
 
-  def test_xsel( self ):
+  def test_xsel(self):
     cbType = 'xsel'
-    testCB = Clipboard( cbType )
-    testCB.write( self.testString )
-    testCB.close( )
-    testCB = Clipboard( cbType )
-    self.assertEqual(  testCB.read( ), self.testString )
-    testCB.close( )
-    testCB = Clipboard( cbType )
-    testCB.clear( )
-    self.assertFalse( len( testCB.read( )))
+    testCB = Clipboard(cbType)
+    testCB.write(self.testString)
+    testCB.close()
+    testCB = Clipboard(cbType)
+    self.assertEqual( testCB.read(), self.testString)
+    testCB.close()
+    testCB = Clipboard(cbType)
+    testCB.clear()
+    self.assertFalse(len(testCB.read()))
 
-  def test_xclip( self ):
+  def test_xclip(self):
     cbType = 'xclip'
-    testCB = Clipboard( cbType )
-    testCB.write( self.testString )
-    testCB.close( )
-    testCB = Clipboard( cbType )
-    self.assertEqual(  testCB.read( ), self.testString )
-    testCB.close( )
-    testCB = Clipboard( cbType )
-    testCB.clear( )
-    self.assertFalse( len( testCB.read( )))
+    testCB = Clipboard(cbType)
+    testCB.write(self.testString)
+    testCB.close()
+    testCB = Clipboard(cbType)
+    self.assertEqual( testCB.read(), self.testString)
+    testCB.close()
+    testCB = Clipboard(cbType)
+    testCB.clear()
+    self.assertFalse(len(testCB.read()))
 
-  def test_tk( self ):
+  def test_tk(self):
     cbType = 'tk'
-    testCB = Clipboard( cbType )
-    testCB.write( self.testString )
-    testCB.close( )
-    testCB = Clipboard( cbType )
-    self.assertEqual(  testCB.read( ), self.testString )
-    testCB.close( )
-    testCB = Clipboard( cbType )
-    testCB.clear( )
-    self.assertFalse( len( testCB.read( )))
+    testCB = Clipboard(cbType)
+    testCB.write(self.testString)
+    testCB.close()
+    testCB = Clipboard(cbType)
+    self.assertEqual( testCB.read(), self.testString)
+    testCB.close()
+    testCB = Clipboard(cbType)
+    testCB.clear()
+    self.assertFalse(len(testCB.read()))
 
-  def test_pbcopy( self ):
+  def test_pbcopy(self):
     cbType = 'pbcopy'
-    testCB = Clipboard( cbType )
-    testCB.write( self.testString )
-    testCB.close( )
-    testCB = Clipboard( cbType )
-    self.assertEqual(  testCB.read( ), self.testString )
-    testCB.close( )
-    testCB = Clipboard( cbType )
-    testCB.clear( )
-    self.assertFalse( len( testCB.read( )))
+    testCB = Clipboard(cbType)
+    testCB.write(self.testString)
+    testCB.close()
+    testCB = Clipboard(cbType)
+    self.assertEqual( testCB.read(), self.testString)
+    testCB.close()
+    testCB = Clipboard(cbType)
+    testCB.clear()
+    self.assertFalse(len(testCB.read()))
 
 
-class StaticMethodTest( unittest.TestCase ):
-  def test_generate( self ):
-    for i in xrange( 128 ):
-      testLen = randint( 1, 1024 )
-      self.assertEqual( testLen, len( PasswordDB.generate( testLen )))
+class StaticMethodTest(unittest.TestCase):
+  def test_generate(self):
+    for i in xrange(128):
+      testLen = randint(1, 1024)
+      self.assertEqual(testLen, len(PasswordDB.generate(testLen)))
 
-  def test_mask( self ):
-    self.assertEqual( 
-      PasswordDB.mask( "user1\tbork_bork\twww.bork.com is borked" ), 
-      "user1\t(9)\twww.bork.com is borked" )
+  def test_mask(self):
+    self.assertEqual(
+      PasswordDB.mask("user1\tbork_bork\twww.bork.com is borked"), 
+      "user1\t(9)\twww.bork.com is borked")
 
-class DBTest( unittest.TestCase ):
-  def setUp( self ):
+class DBTest(unittest.TestCase):
+  def setUp(self):
     self.testDB = '/tmp/passwd'
     self.testPass = 'bork'
     self.testSalt = '1234567890'
     self.testSaltFile = '/tmp/magpie_test_salt'
-    saltFile = open( self.testSaltFile, 'w' )
-    saltFile.write( self.testSalt )
-    saltFile.close( )
-    if os.path.exists( self.testDB ):
-      os.remove( self.testDB )
-    self.pdb = PasswordDB( self.testDB, self.testPass, self.testSaltFile )
+    saltFile = open(self.testSaltFile, 'w')
+    saltFile.write(self.testSalt)
+    saltFile.close()
+    if os.path.exists(self.testDB):
+      os.remove(self.testDB)
+    self.pdb = PasswordDB(self.testDB, self.testPass, self.testSaltFile)
     self.testString = "What a lovely bunch of coconuts!"
     self.inputData = "Username\t  Password\t\tDescription\n" + \
           "user1\tbork_bork\t www.bork.com is borked\n" + \
@@ -133,43 +133,43 @@ class DBTest( unittest.TestCase ):
           "user1\tbork_bork\twww.bork.com is borked\n" + \
           "user2\tblah_blah\twww.blah.com\tlogin\n" + \
           "user3\twoof_woof\tThe biggest of the big dogs" 
-    self.pdb.load( self.inputData )
+    self.pdb.load(self.inputData)
 
-  def test_encode_decode( self ):
-    encodedString = self.pdb.encode( self.testString )
-    decodedString = self.pdb.decode( encodedString )
-    self.assertEqual( decodedString, self.testString )
+  def test_encode_decode(self):
+    encodedString = self.pdb.encode(self.testString)
+    decodedString = self.pdb.decode(encodedString)
+    self.assertEqual(decodedString, self.testString)
     # make sure it doesn't work with a bad password
-    bad_pdb = PasswordDB( self.testDB, "bad_password", self.testSaltFile )
-    bad_decodedString = bad_pdb.decode( encodedString )
-    self.assertNotEqual( bad_decodedString, self.testString )
+    bad_pdb = PasswordDB(self.testDB, "bad_password", self.testSaltFile)
+    bad_decodedString = bad_pdb.decode(encodedString)
+    self.assertNotEqual(bad_decodedString, self.testString)
 
-  def test_import_export( self ):
-    self.assertEqual( self.pdb.dump( ), self.testData )
+  def test_import_export(self):
+    self.assertEqual(self.pdb.dump(), self.testData)
 
-  def test_save_read( self ):
-    self.pdb.close( )
-    self.pdb = PasswordDB( self.testDB, self.testPass, self.testSaltFile )
-    self.assertEqual( self.pdb.dump( ), self.testData )
+  def test_save_read(self):
+    self.pdb.close()
+    self.pdb = PasswordDB(self.testDB, self.testPass, self.testSaltFile)
+    self.assertEqual(self.pdb.dump(), self.testData)
 
-  def test_find( self ):
-    self.assertEqual( self.pdb.find( "biggest", "dogs" ),  "user3\twoof_woof\tThe biggest of the big dogs" )
+  def test_find(self):
+    self.assertEqual(self.pdb.find("biggest", "dogs"),  "user3\twoof_woof\tThe biggest of the big dogs")
     
-  def test_add( self ):
-    self.pdb.add( "user4", "jomo_baru!  ", "\tThe leader of the pack" )
-    self.assertEqual( self.pdb.dump( ), self.testData+"\nuser4\tjomo_baru!\tThe leader of the pack" )
+  def test_add(self):
+    self.pdb.add("user4", "jomo_baru!  ", "\tThe leader of the pack")
+    self.assertEqual(self.pdb.dump(), self.testData+"\nuser4\tjomo_baru!\tThe leader of the pack")
 
-  def test_remove( self ):
-    self.pdb.add( "user4", "jomo_baru!  ", "\tThe leader of the pack" )
-    removeTest = self.pdb.remove( "leader" )
-    self.assertEqual( removeTest, "user4\tjomo_baru!\tThe leader of the pack" )
-    self.assertEqual( self.pdb.dump( ), self.testData )
+  def test_remove(self):
+    self.pdb.add("user4", "jomo_baru!  ", "\tThe leader of the pack")
+    removeTest = self.pdb.remove("leader")
+    self.assertEqual(removeTest, "user4\tjomo_baru!\tThe leader of the pack")
+    self.assertEqual(self.pdb.dump(), self.testData)
 
-  def tearDown( self ):
-    os.remove( self.testSaltFile )
-    if os.path.exists( self.testDB ):
-      os.remove( self.testDB )
+  def tearDown(self):
+    os.remove(self.testSaltFile)
+    if os.path.exists(self.testDB):
+      os.remove(self.testDB)
 
 if __name__ == "__main__":
-    unittest.main( )
+    unittest.main()
 
