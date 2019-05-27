@@ -52,25 +52,27 @@ class CBTest(unittest.TestCase):
     # Test the Clipboard class
     self.testString = 'I want a shrubbery!' 
 
+  @unittest.skipIf(not sys.platform.startswith("linux"), "Skipping xsel test")
   def test_xsel(self):
     cbType = 'xsel'
     testCB = Clipboard(cbType)
     testCB.write(self.testString)
     testCB.close()
     testCB = Clipboard(cbType)
-    self.assertEqual( testCB.read(), self.testString)
+    self.assertEqual(testCB.read(), self.testString)
     testCB.close()
     testCB = Clipboard(cbType)
     testCB.clear()
     self.assertFalse(len(testCB.read()))
 
+  @unittest.skipIf(not sys.platform.startswith("linux"), "Skipping xclip test")
   def test_xclip(self):
     cbType = 'xclip'
     testCB = Clipboard(cbType)
     testCB.write(self.testString)
     testCB.close()
     testCB = Clipboard(cbType)
-    self.assertEqual( testCB.read(), self.testString)
+    self.assertEqual(testCB.read(), self.testString)
     testCB.close()
     testCB = Clipboard(cbType)
     testCB.clear()
@@ -82,19 +84,20 @@ class CBTest(unittest.TestCase):
     testCB.write(self.testString)
     testCB.close()
     testCB = Clipboard(cbType)
-    self.assertEqual( testCB.read(), self.testString)
+    self.assertEqual(testCB.read(), self.testString)
     testCB.close()
     testCB = Clipboard(cbType)
     testCB.clear()
     self.assertFalse(len(testCB.read()))
 
+  @unittest.skipIf(not sys.platform.startswith("darwin"), "Skipping MacOS test")
   def test_pbcopy(self):
     cbType = 'pbcopy'
     testCB = Clipboard(cbType)
     testCB.write(self.testString)
     testCB.close()
     testCB = Clipboard(cbType)
-    self.assertEqual( testCB.read(), self.testString)
+    self.assertEqual(testCB.read(), self.testString)
     testCB.close()
     testCB = Clipboard(cbType)
     testCB.clear()
@@ -103,7 +106,7 @@ class CBTest(unittest.TestCase):
 
 class StaticMethodTest(unittest.TestCase):
   def test_generate(self):
-    for i in xrange(128):
+    for i in range(128):
       testLen = randint(1, 1024)
       self.assertEqual(testLen, len(PasswordDB.generate(testLen)))
 
@@ -136,13 +139,13 @@ class DBTest(unittest.TestCase):
     self.pdb.load(self.inputData)
 
   def test_encode_decode(self):
-    encodedString = self.pdb.encode(self.testString)
-    decodedString = self.pdb.decode(encodedString)
-    self.assertEqual(decodedString, self.testString)
+    encodedString = self.pdb.encrypt(self.testString.encode('utf-8'))
+    decodedString = self.pdb.decrypt(encodedString)
+    self.assertEqual(decodedString, self.testString.encode('utf-8'))
     # make sure it doesn't work with a bad password
     bad_pdb = PasswordDB(self.testDB, "bad_password", self.testSaltFile)
-    bad_decodedString = bad_pdb.decode(encodedString)
-    self.assertNotEqual(bad_decodedString, self.testString)
+    bad_decodedString = bad_pdb.decrypt(encodedString)
+    self.assertNotEqual(bad_decodedString, self.testString.encode('utf-8'))
 
   def test_import_export(self):
     self.assertEqual(self.pdb.dump(), self.testData)
@@ -153,11 +156,13 @@ class DBTest(unittest.TestCase):
     self.assertEqual(self.pdb.dump(), self.testData)
 
   def test_find(self):
-    self.assertEqual(self.pdb.find("biggest", "dogs"),  "user3\twoof_woof\tThe biggest of the big dogs")
-    
+    self.assertEqual(self.pdb.find("biggest", "dogs"),
+            "user3\twoof_woof\tThe biggest of the big dogs")
+
   def test_add(self):
     self.pdb.add("user4", "jomo_baru!  ", "\tThe leader of the pack")
-    self.assertEqual(self.pdb.dump(), self.testData+"\nuser4\tjomo_baru!\tThe leader of the pack")
+    self.assertEqual(self.pdb.dump(),
+        self.testData + "\nuser4\tjomo_baru!\tThe leader of the pack")
 
   def test_remove(self):
     self.pdb.add("user4", "jomo_baru!  ", "\tThe leader of the pack")
