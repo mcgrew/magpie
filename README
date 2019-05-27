@@ -1,8 +1,8 @@
 Installation
 
   Dependencies
-    Magpie has a few dependencies. Magpie requires Python 2.x. Python 3.x is not 
-    supported at this time. Mac OSX and most Linux distributions have this
+    Magpie has a few dependencies. Magpie requires Python 3.x. Python 2.x is no 
+    longer supported. Mac OSX and most Linux distributions have this
     installed by default. On windows, you can download the installer from 
     http://www.python.org/.
     
@@ -27,10 +27,10 @@ Installation
     
     sudo chmod +x /usr/bin/magpie
     
-    On Linux distributions which use Python 3.x as the default (i.e. Arch 
-    Linux), you will need to ensure that magpie is run with Python 2.x. You may 
+    On Linux distributions which use Python 2.x as the default,
+    you will need to ensure that magpie is run with Python 3.x. You may 
     do this by changing the first line of the scipt from '#!/usr/bin/env python' 
-    to '#!/usr/bin/env python2'
+    to '#!/usr/bin/env python3'
 
 Running Magpie
 
