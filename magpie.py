@@ -363,7 +363,7 @@ class PasswordDB(object):
     def generateSalt(length, filename=None) -> bytes:
         returnvalue = os.urandom(length)
         if (filename):
-            with open(filename, 'wb') as saltFile:
+            with open(filename, 'wb') as saltfile:
                 saltfile.write(returnvalue)
         return returnvalue
 
