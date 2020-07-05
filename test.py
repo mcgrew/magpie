@@ -18,6 +18,7 @@
 from magpie import *
 from base64 import b64encode
 from random import randint
+from distutils.spawn import find_executable
 import unittest
 import os
 
@@ -53,7 +54,7 @@ class CBTest(unittest.TestCase):
         # Test the Clipboard class
         self.testString = 'I want a shrubbery!' 
 
-    @unittest.skipIf(not sys.platform.startswith("linux"), "Skipping xsel test")
+    @unittest.skipIf(not find_executable('xsel'), "Skipping xsel test")
     def test_xsel(self):
         cbType = 'xsel'
         testCB = Clipboard(cbType)
@@ -66,7 +67,7 @@ class CBTest(unittest.TestCase):
         testCB.clear()
         self.assertFalse(len(testCB.read()))
 
-    @unittest.skipIf(not sys.platform.startswith("linux"),"Skipping xclip test")
+    @unittest.skipIf(not find_executable('xclip'),"Skipping xclip test")
     def test_xclip(self):
         cbType = 'xclip'
         testCB = Clipboard(cbType)
@@ -79,9 +80,22 @@ class CBTest(unittest.TestCase):
         testCB.clear()
         self.assertFalse(len(testCB.read()))
 
+    # we can't test reading here, because clip.exe doesn't support it
+    @unittest.skipIf(not find_executable('clip.exe'), "Skipping clip.exe test")
+    def test_clip_exe(self):
+        cbType = 'clip.exe'
+        testCB = Clipboard(cbType)
+        testCB.write(self.testString)
+        testCB.close()
+        testCB = Clipboard(cbType)
+        testCB.close()
+        cbType = 'clip.exe'
+        testCB = Clipboard(cbType)
+        testCB.clear()
+
+    @unittest.skipIf(not sys.platform.startswith("windows"), "Skipping tk test")
     def test_tk(self):
         cbType = 'tk'
-        testCB = Clipboard(cbType)
         testCB.write(self.testString)
         testCB.close()
         testCB = Clipboard(cbType)
@@ -91,8 +105,7 @@ class CBTest(unittest.TestCase):
         testCB.clear()
         self.assertFalse(len(testCB.read()))
 
-    @unittest.skipIf(not sys.platform.startswith("darwin"),
-            "Skipping MacOS test")
+    @unittest.skipIf(not find_executable('pbcopy'), "Skipping MacOS test")
     def test_pbcopy(self):
         cbType = 'pbcopy'
         testCB = Clipboard(cbType)

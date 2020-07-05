@@ -21,24 +21,12 @@ import sys
 import shutil
 from optparse import OptionParser
 from getpass import getpass
+from distutils.spawn import find_executable
 import subprocess
 import zlib
 import re
 import string
 from typing import List, Union, Tuple
-
-# Tkinter doesn't retain clipboard data after exit on unix, so we won't use it
-# there. If it has problems in windows, try using the windows api directly:
-# http://stackoverflow.com/questions/579687/how-do-i-copy-a-string-to-the-clipboard-on-windows-using-python
-tkinter = None
-try:
-    if sys.platform == 'win32':
-        if sys.version_info.major >= 3:
-            import tkinter as tkinter
-        else:
-            import tkinter
-except ImportError:
-    pass
 
 #    To Do:
 #        add an --edit option
@@ -62,7 +50,7 @@ SETS = {
 HASH_ITERATIONS = 4096
 
 def parseOpts():
-    parser = OptionParser(version="%prog 0.2",
+    parser = OptionParser(version="%prog 0.3",
         usage="%prog [options] [description|keywords]")
     parser.add_option("-a", "--add", dest="username",
         help="Add a password to the stored passwords with the specified "
@@ -156,7 +144,7 @@ def main(options, args):
         lines = pdb.dump().split('\n')
         print("%30s %8s %s" % PasswordDB.splitLine(lines[0]))
         for line in lines[1:]:
-            print("%20s %8s %s" % PasswordDB.splitLine(PasswordDB.mask(line)))
+            print("%30s %8s %s" % PasswordDB.splitLine(PasswordDB.mask(line)))
         sys.exit(0)
 
     if options.exportFile:
@@ -357,7 +345,8 @@ class PasswordDB(object):
     def generate(length):
         # get a random string containing base64 encoded data, replacing /+ with
         # B64_SYMBOLS
-        return b64encode(os.urandom(length), B64_SYMBOLS)[:length]
+        return b64encode(os.urandom(length), B64_SYMBOLS)[:length] \
+                .decode('utf-8')
 
     @staticmethod
     def generateSalt(length, filename=None) -> bytes:
@@ -380,53 +369,23 @@ class Clipboard(object):
     backend = False
     def __init__(self, backend=None):
         object.__init__(self)
-        try:
-            proc = subprocess.Popen(["which", "pbcopy"],
-                    stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            pbcopy = bool(proc.stdout.read())
-            proc.stderr.close()
-            proc.stdout.close()
-            proc.wait()
-        except:
-            pbcopy = False
+        pbcopy = bool(find_executable('pbcopy'))
+        xsel = bool(find_executable('xsel'))
+        xsel = bool(find_executable('xsel'))
+        xclip = bool(find_executable('xclip'))
+        clip_exe = bool(find_executable('clip.exe'))
 
-        try:
-            proc = subprocess.Popen(["which", "xsel"],
-                    stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            xsel = bool(proc.stdout.read())
-            proc.stderr.close()
-            proc.stdout.close()
-            proc.wait()
-        except:
-            xsel = False
-        try:
-            proc = subprocess.Popen(["which", "xclip"],
-                    stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            xclip = bool(proc.stdout.read())
-            proc.stderr.close()
-            proc.stdout.close()
-            proc.wait()
-        except:
-            xclip = False
-
-        global tkinter
         if backend:
             self.backend = backend
         else:
-            if (tkinter):
-                self.backend = 'tk'
-            elif pbcopy:
-                self.backend = 'pbcopy'
+            if clip_exe:
+                self.backend = 'clip.exe'
             elif xsel:
                 self.backend = 'xsel'
             elif xclip:
                 self.backend = 'xclip'
-
-        if (self.backend == 'tk'):
-            if not tkinter:
-                import tkinter
-            self._tk = tkinter.Tk()
-            self._tk.withdraw()
+            elif pbcopy:
+                self.backend = 'pbcopy'
 
         if not self.backend:
             sys.stderr.write("Unable to properly initialize clipboard - " +
@@ -438,11 +397,6 @@ class Clipboard(object):
         """
         Returns the contents of the clipboard
         """
-        if self.backend == 'tk':
-            try:
-                return self._tk.clipboard_get()
-            except tkinter.TclError:
-                return str()
         if self.backend == 'pbcopy':
             proc = subprocess.Popen(['pbpaste', '-Prefer', 'txt'],
                 stdout=subprocess.PIPE)
@@ -450,6 +404,9 @@ class Clipboard(object):
             proc = subprocess.Popen(['xsel', '-o'], stdout=subprocess.PIPE)
         if self.backend == 'xclip':
             proc = subprocess.Popen(['xclip', '-o'], stdout=subprocess.PIPE)
+        if self.backend == 'clip.exe':
+            raise ValueError("Clipboard reading not supported with the clip.exe"
+                    " backend")
 
         returnvalue = proc.stdout.read().decode('utf-8')
         proc.stdout.close()
@@ -461,15 +418,12 @@ class Clipboard(object):
         """
         Copies text to the system clipboard
         """
-        if self.backend == 'tk': #Windows
-            self._tk.clipboard_clear()
-            self._tk.clipboard_append(text, type='STRING')
-            return
         if self.backend == 'pbcopy': #OSX
             proc = subprocess.Popen(['pbcopy'], stdin=subprocess.PIPE)
             proc.stdin.write(text.encode('utf-8'))
             proc.stdin.close()
             proc.wait()
+            return
         if self.backend == 'xsel': #Linux
             # copy to both XA_PRIMARY and XA_CLIPBOARD
             proc = subprocess.Popen(['xsel', '-p', '-i'], stdin=subprocess.PIPE)
@@ -494,13 +448,18 @@ class Clipboard(object):
             proc.stdin.close()
             proc.wait()
             return
+        if self.backend == 'clip.exe': #Windows/WSL
+            # copy to both XA_PRIMARY and XA_CLIPBOARD
+            proc = subprocess.Popen(['clip.exe'], stdin=subprocess.PIPE)
+            proc.stdin.write(text.encode('utf-8'))
+            proc.stdin.close()
+            proc.wait()
+            return
 
     def clear(self) -> None:
         """
         Clear the clipboard contents
         """
-        if self.backend == 'tk':
-            self._tk.clipboard_clear()
         if self.backend == 'xsel':
             subprocess.call(['xsel', '-pc'])
             subprocess.call(['xsel', '-bc'])
@@ -522,9 +481,15 @@ class Clipboard(object):
             proc.stdin.close()
             proc.wait()
 
+        if self.backend == 'clip.exe':
+            proc = subprocess.Popen(['clip.exe'],
+                        stdin=subprocess.PIPE)
+            proc.stdin.write(b'')
+            proc.stdin.close()
+            proc.wait()
+
     def close(self) -> None:
-        if self.backend == 'tk':
-            self._tk.destroy()
+        pass
 
 if __name__ == "__main__":
     main(*parseOpts())
