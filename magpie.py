@@ -16,6 +16,7 @@
 from Crypto.Cipher import AES
 from hashlib import sha256
 from base64 import b64encode,b64decode
+from tempfile import mkstemp
 import os
 import sys
 import shutil
@@ -77,9 +78,9 @@ def parseOpts():
     parser.add_option("--find", action="store_true", dest="find",
         help="Find an entry in the database and print its value with the "
         "password masked.")
-#    parser.add_option("-e", "--edit", action="store_true", dest="edit",
-#        help="Edit the file in the default system text editor and import the " +
-#        "result as the new database.")
+    parser.add_option("-e", "--edit", action="store_true", dest="edit",
+        help="Edit the file in the default system text editor and import the " +
+        "result as the new database.")
     parser.add_option("-o", "--export", dest="exportFile", metavar="FILE",
         help="Export the password database to a delimited text file. Keep this "
         "file secure, as it will contain all of your passwords in plain text. "
@@ -114,7 +115,7 @@ def main(options, args):
             sys.stdout.write(newPass)
         else:
             clipboard.write(newPass)
-        sys.exit(0)
+        sys.exit()
     # prompt for password
     password = getpass("Master Password: ")
 
@@ -138,14 +139,35 @@ def main(options, args):
         pdb.password = newPass
         print("Master Password Changed")
         pdb.flush()
-        sys.exit(0)
+        sys.exit()
 
     if options.print_all:
         lines = pdb.dump().split('\n')
-        print("%30s %8s %s" % PasswordDB.splitLine(lines[0]))
+        format_ = f"%{min(int(os.get_terminal_size().columns // 2.5), 30)}s %8s %s"
+        print(format_ % PasswordDB.splitLine(lines[0]))
         for line in lines[1:]:
-            print("%30s %8s %s" % PasswordDB.splitLine(PasswordDB.mask(line)))
-        sys.exit(0)
+            print(format_ % PasswordDB.splitLine(PasswordDB.mask(line)))
+        sys.exit()
+
+    if options.edit:
+        fd, filename = mkstemp(text=True)
+        os.write(fd, pdb.dump().encode('UTF-8'))
+        os.close(fd)
+        editors = (os.getenv('EDITOR', 'vim'), 'vim', 'nano', 'notepad.exe', 'emacs')
+        for editor in editors:
+            if find_executable(editor):
+                subprocess.run([editor, filename])
+                try:
+                    with open(filename, 'r') as f:
+                        pdb.load(f.read())
+                    pdb.flush()
+                except ValueError as e:
+                    sys.stderr.write(str(e))
+                finally:
+                    os.remove(filename)
+                sys.exit()
+        sys.stderr.write('Unable to find an appropriate editor.')
+        sys.exit()
 
     if options.exportFile:
         if options.exportFile == '-':
@@ -153,7 +175,7 @@ def main(options, args):
         else:
             with open(options.exportFile, 'wb') as exportFile:
                 exportFile.write(pdb.dump().encode('utf-8'))
-        sys.exit(0)
+        sys.exit()
 
     if options.importFile:
         if options.importFile == '-':
@@ -162,7 +184,7 @@ def main(options, args):
             with open(options.importFile, 'rb') as importFile:
                 pdb.load(importFile.read().decode('utf-8'))
         pdb.flush()
-        sys.exit(0)
+        sys.exit()
 
     if options.remove:
         removed = pdb.remove(*args)
@@ -195,7 +217,7 @@ def main(options, args):
     # The exit is here to allow a person to add and remove at the same time.
     # In other words, replace an entry.
     if options.remove:
-        sys.exit(0)
+        sys.exit()
 
     found = pdb.find(*args)
     if not found:
@@ -207,7 +229,7 @@ def main(options, args):
         if found:
             print("%20s %8s %s" % PasswordDB.splitLine(pdb.data.split('\n')[0]))
             print("%20s %8s %s" % PasswordDB.splitLine(PasswordDB.mask(found)))
-            sys.exit(0)
+            sys.exit()
         else:
             print("Unable to locate entry for search terms '%s'" %
                 ' '.join(args))
@@ -285,6 +307,9 @@ class PasswordDB(object):
         data = data.strip().split("\n")
         self.data = ""
         for i in data:
+            line = PasswordDB.splitLine(i.strip())
+            if len(line) < 3:
+                raise ValueError(f"Not enough arguments, aborting: {line}")
             self.data += '\t'.join(PasswordDB.splitLine(i.strip())) + '\n'
         self.data = self.data.strip()
 
