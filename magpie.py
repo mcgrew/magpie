@@ -389,28 +389,25 @@ class PasswordDB(object):
     @staticmethod
     def splitLine(line:str) -> Tuple[str]:
         return tuple(re.split("(\s*\t\s*)+", line, 2)[::2])
+#         return line.replace('\t', '  ').split(None, 2)[::2]
 
 class Clipboard(object):
     backend = False
     def __init__(self, backend=None):
         object.__init__(self)
-        pbcopy = bool(find_executable('pbcopy'))
-        xsel = bool(find_executable('xsel'))
-        xsel = bool(find_executable('xsel'))
-        xclip = bool(find_executable('xclip'))
-        clip_exe = bool(find_executable('clip.exe'))
-
         if backend:
             self.backend = backend
         else:
-            if clip_exe:
+            if bool(find_executable('clip.exe')):
                 self.backend = 'clip.exe'
-            elif xsel:
+            elif bool(find_executable('xsel')):
                 self.backend = 'xsel'
-            elif xclip:
+            elif bool(find_executable('xclip')):
                 self.backend = 'xclip'
-            elif pbcopy:
+            elif bool(find_executable('pbcopy')):
                 self.backend = 'pbcopy'
+            elif bool(find_executable('termux-clipboard-set')):
+                self.backend = 'termux-clipboard'
 
         if not self.backend:
             sys.stderr.write("Unable to properly initialize clipboard - " +
@@ -422,14 +419,16 @@ class Clipboard(object):
         """
         Returns the contents of the clipboard
         """
-        if self.backend == 'pbcopy':
+        if self.backend == 'pbcopy': # MacOS
             proc = subprocess.Popen(['pbpaste', '-Prefer', 'txt'],
                 stdout=subprocess.PIPE)
-        if self.backend == 'xsel':
+        if self.backend == 'xsel': # Linux
             proc = subprocess.Popen(['xsel', '-o'], stdout=subprocess.PIPE)
-        if self.backend == 'xclip':
+        if self.backend == 'xclip': # Linux
             proc = subprocess.Popen(['xclip', '-o'], stdout=subprocess.PIPE)
-        if self.backend == 'clip.exe':
+        if self.backend == 'termux-clipboard': # Termux
+            proc = subprocess.Popen(['termux-clipboard-get'], stdout=subprocess.PIPE)
+        if self.backend == 'clip.exe': # Windows/WSL
             raise ValueError("Clipboard reading not supported with the clip.exe"
                     " backend")
 
@@ -443,12 +442,6 @@ class Clipboard(object):
         """
         Copies text to the system clipboard
         """
-        if self.backend == 'pbcopy': #OSX
-            proc = subprocess.Popen(['pbcopy'], stdin=subprocess.PIPE)
-            proc.stdin.write(text.encode('utf-8'))
-            proc.stdin.close()
-            proc.wait()
-            return
         if self.backend == 'xsel': #Linux
             # copy to both XA_PRIMARY and XA_CLIPBOARD
             proc = subprocess.Popen(['xsel', '-p', '-i'], stdin=subprocess.PIPE)
@@ -473,9 +466,21 @@ class Clipboard(object):
             proc.stdin.close()
             proc.wait()
             return
+        if self.backend == 'termux-clipboard': #Termux
+            proc = subprocess.Popen(['termux-clipboard-set'], stdin=subprocess.PIPE)
+            proc.stdin.write(text.encode('utf-8'))
+            proc.stdin.close()
+            proc.wait()
+            return
         if self.backend == 'clip.exe': #Windows/WSL
             # copy to both XA_PRIMARY and XA_CLIPBOARD
             proc = subprocess.Popen(['clip.exe'], stdin=subprocess.PIPE)
+            proc.stdin.write(text.encode('utf-8'))
+            proc.stdin.close()
+            proc.wait()
+            return
+        if self.backend == 'pbcopy': # MacOS
+            proc = subprocess.Popen(['pbcopy'], stdin=subprocess.PIPE)
             proc.stdin.write(text.encode('utf-8'))
             proc.stdin.close()
             proc.wait()
@@ -489,11 +494,6 @@ class Clipboard(object):
             subprocess.call(['xsel', '-pc'])
             subprocess.call(['xsel', '-bc'])
             return
-        if self.backend == 'pbcopy':
-            proc = subprocess.Popen(['pbcopy'], stdin=subprocess.PIPE)
-            proc.stdin.write(b'')
-            proc.stdin.close()
-            proc.wait()
         if self.backend == 'xclip':
             proc = subprocess.Popen(['xclip', '-i', '-selection', 'primary'],
                         stdin=subprocess.PIPE)
@@ -512,6 +512,19 @@ class Clipboard(object):
             proc.stdin.write(b'')
             proc.stdin.close()
             proc.wait()
+
+        if self.backend == 'termux-clipboard':
+            proc = subprocess.Popen(['termux-clipboard-set'], stdin=subprocess.PIPE)
+            proc.stdin.write(b'')
+            proc.stdin.close()
+            proc.wait()
+
+        if self.backend == 'pbcopy':
+            proc = subprocess.Popen(['pbcopy'], stdin=subprocess.PIPE)
+            proc.stdin.write(b'')
+            proc.stdin.close()
+            proc.wait()
+
 
     def close(self) -> None:
         pass

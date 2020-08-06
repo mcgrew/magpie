@@ -118,6 +118,18 @@ class CBTest(unittest.TestCase):
         testCB.clear()
         self.assertFalse(len(testCB.read()))
 
+    @unittest.skipIf(not find_executable('termux-clipboard'), "Skipping Termux test")
+    def test_termux_clipboard(self):
+        cbType = 'termux-clipboard'
+        testCB = Clipboard(cbType)
+        testCB.write(self.testString)
+        testCB.close()
+        testCB = Clipboard(cbType)
+        self.assertEqual(testCB.read(), self.testString)
+        testCB.close()
+        testCB = Clipboard(cbType)
+        testCB.clear()
+        self.assertFalse(len(testCB.read()))
 
 class StaticMethodTest(unittest.TestCase):
     def test_generate(self):
