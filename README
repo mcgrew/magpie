@@ -2,35 +2,30 @@ Installation
 
   Dependencies
     Magpie has a few dependencies. Magpie requires Python 3.x. Python 2.x is no 
-    longer supported. Mac OSX and most Linux distributions have this
-    installed by default. On windows, you can download the installer from 
-    http://www.python.org/.
-    
+    longer supported. 
+
     Pycrypto is required. On linux this is likely contained in your package 
     manager. On Windows and Mac OSX, this can be installed with Python's 
-    easy_install:
+    pip package manager:
 
-    easy_install PyCrypto
+    python3 -m pip install pycrypto
 
     On Windows and Mac OSX, no other dependencies are necessary, as magpie will 
-    use Tk on Windows and pbcopy on Mac OSX to access the clipboard. On Linux 
-    you will need a seperate application for clipboard access. I recommend xsel, 
-    but xclip is also supported. In Linux these should be available in your 
-    package manager.
+    use clip.exe on Windows/WSL and pbcopy on Mac OSX to access the clipboard.
+    On Linux you will need a seperate application for clipboard access. Both
+    xsel and xclip are supported.
+
+    Magpie is also supported in Termux for Android. You will need to install 
+    Python 3, pycrypto, and the Termux:API plugin. Magpie uses
+    termux-clipboard-set and termux-clipboard-get for clipboard access
 
   Installing Magpie
     Installation of magpie is faily simple. On Linux and Mac OSX, simply copy
-    the magpie.py script to somewhere in your path. This can be /usr/bin on
-    Linux/OSX, or /usr/local/bin on OSX. I also recommend that you rename
-    magpie.py to simply magpie. Be sure that you set the executable flag on the 
-    file:
-    
+    the magpie.py script to somewhere in your path. I also recommend that you
+    rename magpie.py to simply magpie. Be sure that you set the executable flag
+    on the file:
+
     sudo chmod +x /usr/bin/magpie
-    
-    On Linux distributions which use Python 2.x as the default,
-    you will need to ensure that magpie is run with Python 3.x. You may 
-    do this by changing the first line of the scipt from '#!/usr/bin/env python' 
-    to '#!/usr/bin/env python3'
 
 Running Magpie
 
@@ -49,8 +44,9 @@ Running Magpie
       -a USERNAME, --add=USERNAME
                             Add a password to the stored passwords with the
                             specified username.
-      -f FILE, --file=FILE  Use FILE instead of /Users/mcgrew/.magpie/database 
-                            for storing/retrieving passwords.
+      -f FILE, --file=FILE  Use FILE instead of
+                            /home/mcgrew/.config/magpie/database for
+                            storing/retrieving passwords.
       -g LENGTH, --generate=LENGTH
                             Generate a random password of the specified length
                             instead of prompting for one.
@@ -58,27 +54,28 @@ Running Magpie
       --debug               Print debugging messages to stderr.
       --list                Print entire database to standard output with the
                             passwords masked.
-      --change-password     Change the master password for the database
-      --find                Find an entry in the database and print its value 
-                            with the password masked.
+      --change-password     Change the master password for the database.
+      --find                Find an entry in the database and print its value with
+                            the password masked.
+      -e, --edit            Edit the file in the default system text editor and
+                            import the result as the new database.
       -o FILE, --export=FILE
-                            Export the password database to a delimited text 
-                            file.  Keep this file secure, as it will contain all 
-                            of your passwords in plain text. Specify - as the 
-                            filename to print to stdout.
+                            Export the password database to a delimited text file.
+                            Keep this file secure, as it will contain all of your
+                            passwords in plain text. Specify - as the filename to
+                            print to stdout.
       -i FILE, --import=FILE
-                            Import a password database from a delimited text 
-                            file. This will overwrite any passwords in your 
-                            current database. Specify - as the filename to read 
-                            from stdin.
-      -s FILE, --salt=FILE  Use FILE instead of /Users/mcgrew/.magpie/salt for
-                            password salt.
-      --tr=SUBS, --sub=SUBS Takes an argument in the form chars:chars and
+                            Import a password database from a delimited text file.
+                            This will overwrite any passwords in your current
+                            database. Specify - as the filename to read from
+                            stdin.
+      -s FILE, --salt=FILE  Use FILE instead of /home/mcgrew/.config/magpie/salt
+                            for password salt.
+      --tr=SUBS, --sub=SUBS
+                            Takes an argument in the form chars:chars and
                             translates characters in generated passwords,
                             replacing characters before the : with the
-                            corresponding character after the :
+                            corresponding character after the :.
       -p, --print           Print the password to standard output instead of
-                            copying it to the clipboard
-
-
+                            copying it to the clipboard.
 
