@@ -69,7 +69,7 @@ Running Magpie
                             This will overwrite any passwords in your current
                             database. Specify - as the filename to read from
                             stdin.
-      -s FILE, --salt=FILE  Use FILE instead of /home/mcgrew/.config/magpie/salt
+      -s FILE, --salt=FILE  Use FILE instead of $HOME/.config/magpie/salt
                             for password salt.
       --tr=SUBS, --sub=SUBS
                             Takes an argument in the form chars:chars and

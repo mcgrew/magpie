@@ -6,12 +6,12 @@
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation, either version 3 of the License, or
 #    (at your option) any later version.
-#    
+#
 #     This program is distributed in the hope that it will be useful,
 #    but WITHOUT ANY WARRANTY; without even the implied warranty of
 #    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.    See the
 #    GNU General Public License for more details.
-#    
+#
 #    You should have received a copy of the GNU General Public License
 #    along with this program.    If not, see <http://www.gnu.org/licenses/>.
 
@@ -25,9 +25,9 @@ import os
 
 def main():
 
-    PASSED = cbTest() 
+    PASSED = cbTest()
 
-    PASSED = DBTest() and PASSED    
+    PASSED = DBTest() and PASSED
 
     # print(the overall results)
     print
@@ -35,7 +35,7 @@ def main():
         print("All tests were passed")
     else:
         print("One or more tests did not succeed.")
-    
+
 
 def testGenerator(testLen=512):
     returnvalue = True
@@ -52,7 +52,7 @@ def testGenerator(testLen=512):
 class CBTest(unittest.TestCase):
     def setUp(self):
         # Test the Clipboard class
-        self.testString = 'I want a shrubbery!' 
+        self.testString = 'I want a shrubbery!'
 
     @unittest.skipIf(not find_executable('xsel'), "Skipping xsel test")
     def test_xsel(self):
@@ -93,18 +93,6 @@ class CBTest(unittest.TestCase):
         testCB = Clipboard(cbType)
         testCB.clear()
 
-    @unittest.skipIf(not sys.platform.startswith("windows"), "Skipping tk test")
-    def test_tk(self):
-        cbType = 'tk'
-        testCB.write(self.testString)
-        testCB.close()
-        testCB = Clipboard(cbType)
-        self.assertEqual(testCB.read(), self.testString)
-        testCB.close()
-        testCB = Clipboard(cbType)
-        testCB.clear()
-        self.assertFalse(len(testCB.read()))
-
     @unittest.skipIf(not find_executable('pbcopy'), "Skipping MacOS test")
     def test_pbcopy(self):
         cbType = 'pbcopy'
@@ -139,7 +127,7 @@ class StaticMethodTest(unittest.TestCase):
 
     def test_mask(self):
         self.assertEqual(
-            PasswordDB.mask("user1\tbork_bork\twww.bork.com is borked"), 
+            PasswordDB.mask("user1\tbork_bork\twww.bork.com is borked"),
             "user1\t(9)\twww.bork.com is borked")
 
 class DBTest(unittest.TestCase):
@@ -158,11 +146,11 @@ class DBTest(unittest.TestCase):
         self.inputData = "Username\t    Password\t\tDescription\n" + \
                     "user1\tbork_bork\t www.bork.com is borked\n" + \
                     "user2\t\t \tblah_blah\twww.blah.com\tlogin\n" + \
-                    "user3    \twoof_woof \tThe biggest of the big dogs" 
+                    "user3    \twoof_woof \tThe biggest of the big dogs"
         self.testData = "Username\tPassword\tDescription\n" + \
                     "user1\tbork_bork\twww.bork.com is borked\n" + \
                     "user2\tblah_blah\twww.blah.com\tlogin\n" + \
-                    "user3\twoof_woof\tThe biggest of the big dogs" 
+                    "user3\twoof_woof\tThe biggest of the big dogs"
         self.pdb.load(self.inputData)
 
     def test_encode_decode(self):
