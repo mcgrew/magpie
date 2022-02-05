@@ -22,7 +22,7 @@ import sys
 import shutil
 from optparse import OptionParser
 from getpass import getpass
-from distutils.spawn import find_executable
+from shutil import which
 import subprocess
 import zlib
 import re
@@ -155,7 +155,7 @@ def main(options, args):
         os.close(fd)
         editors = (os.getenv('EDITOR', 'vim'), 'vim', 'nano', 'notepad.exe', 'emacs')
         for editor in editors:
-            if find_executable(editor):
+            if which(editor):
                 subprocess.run([editor, filename])
                 try:
                     with open(filename, 'r') as f:
@@ -398,15 +398,15 @@ class Clipboard(object):
         if backend:
             self.backend = backend
         else:
-            if bool(find_executable('clip.exe')):
+            if bool(which('clip.exe')):
                 self.backend = 'clip.exe'
-            elif bool(find_executable('xsel')):
+            elif bool(which('xsel')):
                 self.backend = 'xsel'
-            elif bool(find_executable('xclip')):
+            elif bool(which('xclip')):
                 self.backend = 'xclip'
-            elif bool(find_executable('pbcopy')):
+            elif bool(which('pbcopy')):
                 self.backend = 'pbcopy'
-            elif bool(find_executable('termux-clipboard-set')):
+            elif bool(which('termux-clipboard-set')):
                 self.backend = 'termux-clipboard'
 
         if not self.backend:
