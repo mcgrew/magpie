@@ -392,7 +392,7 @@ class PasswordDB(object):
 
     @staticmethod
     def splitLine(line:str) -> Tuple[str]:
-        return tuple(re.split("(\s*\t\s*)+", line, 2)[::2])
+        return tuple(re.split("(\\s*\\t\\s*)+", line, 2)[::2])
 #         return line.replace('\t', '  ').split(None, 2)[::2]
 
 class Clipboard(object):
