@@ -143,7 +143,11 @@ def main(options, args):
 
     if options.print_all:
         lines = pdb.dump().split('\n')
-        format_ = f"%{min(int(os.get_terminal_size().columns // 2.5), 30)}s %8s %s"
+        try:
+            termwidth = os.get_terminal_size().colums
+        except:
+            termwidth = 100
+        format_ = f"%{min(int(termwidth // 2.5), 30)}s %8s %s"
         print(format_ % PasswordDB.splitLine(lines[0]))
         for line in lines[1:]:
             print(format_ % PasswordDB.splitLine(PasswordDB.mask(line)))
